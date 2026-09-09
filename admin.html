@@ -3,81 +3,327 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KurdTell - پانێڵی بەڕێوەبەر</title>
+  <title>کۆنترۆڵ پانێڵی بەڕێوەبەر - KurdTell</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --card-bg: #1e293b;
+      --bg-dark: #090d16;
+      --panel-bg: #131b2e;
+      --card-bg: #1a233a;
       --primary: #10b981;
       --danger: #ef4444;
-      --text: #f8fafc;
+      --warning: #f59e0b;
+      --gold: #eab308;
+      --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --border: #334155;
+      --border: #263352;
     }
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
-    body { background-color: var(--bg-dark); color: var(--text); padding: 15px; direction: rtl; }
-    .container { max-width: 900px; margin: 0 auto; }
-    header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
-    h1 { font-size: 1.4rem; color: var(--primary); }
-    .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
-    .card h2 { font-size: 1.1rem; margin-bottom: 15px; }
-    .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
-    input { width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 0.95rem; }
-    input:focus { border-color: var(--primary); outline: none; }
-    .btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-green { background: var(--primary); color: #000; }
-    .btn-green:hover { opacity: 0.9; }
-    .btn-red { background: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.85rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); }
-    th { color: var(--text-muted); font-size: 0.85rem; }
-    .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); color: var(--primary); }
+
+    [data-theme="light"] {
+      --bg-dark: #f1f5f9;
+      --panel-bg: #ffffff;
+      --card-bg: #ffffff;
+      --primary: #059669;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --gold: #ca8a04;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #cbd5e1;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      margin: 0;
+      padding: 14px;
+      direction: rtl;
+      box-sizing: border-box;
+    }
+
+    .admin-app { max-width: 1050px; margin: 0 auto; }
+
+    /* پەنجەرەی چوونەژوورەوە */
+    .admin-login-overlay {
+      position: fixed; inset: 0; background: rgba(9, 13, 22, 0.95);
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+    }
+    .login-box {
+      background: var(--panel-bg); border: 1px solid var(--border);
+      padding: 25px; border-radius: 12px; width: 90%; max-width: 380px; text-align: center;
+    }
+    .login-box h2 { color: var(--primary); margin-bottom: 8px; }
+    .login-box p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; }
+    .login-box input { margin-bottom: 12px; }
+
+    .admin-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .header-right-side { display: flex; align-items: center; gap: 10px; }
+    .settings-trigger-btn {
+      background: var(--panel-bg); border: 1px solid var(--border); color: var(--text-main);
+      font-size: 1.2rem; padding: 6px 10px; border-radius: 10px; cursor: pointer;
+    }
+    .admin-header h1 { margin: 0; font-size: 1.25rem; color: var(--primary); }
+    .admin-header small { color: var(--text-muted); }
+    .btn-logout {
+      background: transparent; border: 1px solid var(--danger); color: var(--danger);
+      padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    }
+
+    .app-logo-badge {
+      width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);
+    }
+    .preview-logo-img {
+      width: 64px; height: 64px; border-radius: 12px; object-fit: cover;
+      border: 1px dashed var(--border); margin: 6px auto; display: block; background: rgba(255,255,255,0.05);
+    }
+
+    /* هێڵی خاوەن */
+    .owner-call-card { background: var(--panel-bg); border: 1px solid var(--primary); margin-bottom: 15px; }
+    .owner-call-header { display: flex; justify-content: space-between; align-items: center; }
+    .owner-badge { font-weight: bold; color: var(--primary); font-size: 1rem; }
+    .status-indicator { font-size: 0.78rem; margin-top: 3px; }
+    .status-indicator.online { color: #10b981; }
+    .status-indicator.offline { color: #ef4444; }
+    .admin-timer { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
+
+    .incoming-alert {
+      margin-top: 10px; padding: 12px; background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--primary); border-radius: 8px; display: flex;
+      justify-content: space-between; align-items: center; animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .call-action-btns { display: flex; gap: 8px; }
+    .btn-sm-accept { background: var(--primary); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-sm-reject { background: var(--danger); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-danger-wide { width: 100%; background: var(--danger); color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+    /* ئامارەکان */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px;
+    }
+    .stat-card {
+      background: var(--panel-bg); border: 1px solid var(--border); padding: 10px; border-radius: 10px; text-align: center;
+    }
+    .stat-title { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 1.4rem; font-weight: bold; }
+    .active-card .stat-value { color: var(--primary); }
+    .paused-card .stat-value { color: var(--warning); }
+    .expired-card .stat-value { color: var(--danger); }
+
+    .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+    .card h3 { margin: 0 0 10px 0; font-size: 1rem; }
+
+    .packages-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
+    .pkg-btn {
+      background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main);
+      padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .pkg-btn-gold { border-color: var(--gold); color: var(--gold); }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
+
+    input, select {
+      width: 100%; padding: 9px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-dark); color: var(--text-main); box-sizing: border-box;
+    }
+
+    .btn-primary {
+      background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; width: 100%;
+    }
+
+    /* خشتەی کڕیاران */
+    .table-container { overflow-x: auto; margin-top: 10px; }
+    table { width: 100%; border-collapse: collapse; text-align: right; }
+    th { padding: 10px; font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--card-bg); }
+    td { padding: 10px; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+    .badge-active { background: rgba(16, 185, 129, 0.2); color: var(--primary); }
+    .badge-paused { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+    .badge-expired { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+    .btn-action { padding: 4px 8px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; margin-left: 4px; }
+    .btn-del { background: rgba(239,68,68,0.2); color: var(--danger); }
+    .btn-toggle { background: rgba(245,158,11,0.2); color: var(--warning); }
+
+    /* دڕاوەری ڕێکخستن */
+    .admin-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; z-index: 100; }
+    .admin-drawer {
+      position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
+      background: var(--panel-bg); border-left: 1px solid var(--border);
+      padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 101; overflow-y: auto;
+    }
+    .admin-drawer.open { right: 0; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <header>
-    <h1>KurdTell - پانێڵی بەڕێوەبەر ⚙️</h1>
-    <a href="index.html" class="btn btn-green" style="text-decoration: none; font-size: 0.85rem;">چوون بۆ ئەپ 📱</a>
+<div class="admin-app">
+  <!-- پەنجەرەی چوونەژوورەوەی ئەدمین -->
+  <div id="adminLoginScreen" class="admin-login-overlay">
+    <div class="login-box">
+      <h2>چوونەژوورەوەی بەڕێوەبەر 🔐</h2>
+      <p>ناوی بەکارهێنەر و وشەی نهێنی بنووسە</p>
+      <input type="text" id="masterUserInput" placeholder="ناوی بەکارهێنەر (admin)">
+      <input type="password" id="masterPassInput" placeholder="ڕەمزی ئەدمین (admin1234)">
+      <button onclick="loginAdmin()" class="btn-primary">چوونەژوورەوە</button>
+    </div>
+  </div>
+
+  <!-- سەردێڕ و بەشی سەرەوە -->
+  <header class="admin-header">
+    <div class="header-right-side">
+      <button class="settings-trigger-btn" onclick="toggleAdminDrawer(true)">⚙️</button>
+      <img id="adminHeaderLogo" src="" alt="Logo" class="app-logo-badge" style="display: none;">
+      <div>
+        <h1>کۆنترۆڵ پانێڵی KurdTell ⚡</h1>
+        <small>بەڕێوەبردنی هێڵەکان و پەیوەندییەکان</small>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button onclick="toggleAdminTheme()" class="settings-trigger-btn">🌓</button>
+      <button onclick="logoutAdmin()" class="btn-logout">چوونەدەرەوە 🚪</button>
+    </div>
   </header>
 
-  <section class="card">
-    <h2>زیادکردنی هێڵی نوێ ➕</h2>
-    <div class="grid-inputs">
-      <input type="text" id="clientName" placeholder="ناوی بەکارهێنەر">
-      <input type="tel" id="clientPhone" placeholder="ژمارەی هێڵ (٦ ڕەقەم)" maxlength="6">
-      <input type="text" id="clientPass" placeholder="وشەی نهێنی">
-      <input type="number" id="clientDays" placeholder="ڕۆژی بەشداریکردن" value="30">
+  <!-- هێڵی خاوەن: 000000 -->
+  <div class="card owner-call-card">
+    <div class="owner-call-header">
+      <div>
+        <span class="owner-badge">📞 هێڵی خاوەنی سیستەم: 000000</span>
+        <div id="adminServerStatus" class="status-indicator online">سێرڤەری Firebase چالاکە 🟢</div>
+      </div>
+      <div id="adminCallTimer" class="admin-timer" style="display: none;">00:00</div>
     </div>
-    <button onclick="createAccount()" class="btn btn-green">تۆمارکردن لە سیستەم 💾</button>
-  </section>
 
-  <section class="card">
-    <h2>هێڵە تۆمارکراوەکان 📋</h2>
-    <div style="overflow-x: auto;">
+    <div id="incomingCallArea" class="incoming-alert" style="display: none;">
+      <div>
+        <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">پەیوەندی نوێی هاتوو:</span>
+        <strong id="incomingCallerText" style="font-size: 1.1rem; color: #10b981;">...</strong>
+      </div>
+      <div class="call-action-btns">
+        <button onclick="acceptAdminCall()" class="btn-sm-accept">📞 وەڵامدانەوە</button>
+        <button onclick="rejectAdminCall()" class="btn-sm-reject">📴 ڕەتکردنەوە</button>
+      </div>
+    </div>
+
+    <div id="activeCallControls" style="display: none; margin-top: 10px;">
+      <button onclick="hangUpAdminCall()" class="btn-danger-wide">📴 داخستنەوەی پەیوەندی</button>
+    </div>
+    <audio id="adminRemoteAudio" autoplay playsinline></audio>
+  </div>
+
+  <!-- ئامارەکان -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-title">کۆی کڕیاران</span>
+      <span class="stat-value" id="statTotal">0</span>
+    </div>
+    <div class="stat-card active-card">
+      <span class="stat-title">هێڵە چالاکەکان</span>
+      <span class="stat-value" id="statActive">0</span>
+    </div>
+    <div class="stat-card paused-card">
+      <span class="stat-title">هێڵە وەستێنراوەکان</span>
+      <span class="stat-value" id="statPaused">0</span>
+    </div>
+    <div class="stat-card expired-card">
+      <span class="stat-title">بەسەرچووەکان</span>
+      <span class="stat-value" id="statExpired">0</span>
+    </div>
+  </div>
+
+  <!-- نوێکردنەوەی خێرا بە پاکیجەکان -->
+  <div class="card">
+    <h3>پاکیجەکانی بەشداریکردن (نوێکردنەوەی خێرا) 📦</h3>
+    <div class="packages-grid">
+      <button class="pkg-btn" onclick="renewSelectedPackage(7)">٧ ڕۆژی ⏱️</button>
+      <button class="pkg-btn" onclick="renewSelectedPackage(15)">١٥ ڕۆژی ⏱️</button>
+      <button class="pkg-btn" onclick="renewSelectedPackage(30)">٣٠ ڕۆژی ⏱️</button>
+      <button class="pkg-btn" onclick="renewSelectedPackage(60)">٦٠ ڕۆژی ⏱️</button>
+      <button class="pkg-btn pkg-btn-gold" onclick="renewSelectedPackage(365)">١ ساڵ 👑</button>
+    </div>
+  </div>
+
+  <!-- تۆمارکردنی کڕیاری نوێ -->
+  <div class="card">
+    <h3>تۆمارکردنی کڕیاری نوێ و دروستکردنی هێڵ 📝</h3>
+    <div class="form-grid">
+      <input type="text" id="newFullName" placeholder="ناوی سیانی">
+      <input type="number" id="newAge" placeholder="تەمەن">
+      <input type="text" id="newRealPhone" placeholder="ژمارەی مۆبایل">
+      <input type="text" id="newAddress" placeholder="شوێنی نیشتەجێبوون">
+      <select id="newClientPlan">
+        <option value="7">٧ ڕۆژی</option>
+        <option value="15">١٥ ڕۆژی</option>
+        <option value="30" selected>٣٠ ڕۆژی</option>
+        <option value="60">٦٠ ڕۆژی</option>
+        <option value="365">١ ساڵ</option>
+      </select>
+    </div>
+    <button onclick="registerNewClient()" class="btn-primary" style="margin-top: 10px;">تۆمارکردن لە بنکەی دراوە (Firebase) ✅</button>
+  </div>
+
+  <!-- خشتەی کڕیاران -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h3>لیستی کڕیارانی تۆمارکراو 📋</h3>
+      <input type="text" id="searchInput" oninput="filterClients()" placeholder="🔍 گەڕان بەپێی ناو یان ژمارەی هێڵ..." style="width: 220px;">
+    </div>
+    <div class="table-container">
       <table>
         <thead>
           <tr>
-            <th>ناو</th>
-            <th>ژمارەی هێڵ</th>
+            <th>ناوی سیانی</th>
+            <th>هێڵ (٦ ژمارە)</th>
             <th>وشەی نهێنی</th>
-            <th>ڕۆژی ماوە</th>
+            <th>بەسەرچوون</th>
             <th>دۆخ</th>
-            <th>کردار</th>
+            <th>کردارەکان</th>
           </tr>
         </thead>
-        <tbody id="linesTableBody">
-          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">چاوەڕێی داتاکانە...</td></tr>
+        <tbody id="clientsTableBody">
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">باردەکرێت...</td></tr>
         </tbody>
       </table>
     </div>
-  </section>
+  </div>
+</div>
+
+<!-- دڕاوەری ڕێکخستنەکان -->
+<div id="adminDrawerOverlay" class="admin-drawer-overlay" onclick="toggleAdminDrawer(false)"></div>
+<div id="adminSettingsDrawer" class="admin-drawer">
+  <h3 style="color: var(--primary); margin-top: 0;">ڕێکخستنەکانی سیستەم ⚙️</h3>
+  
+  <div class="logo-setting-box" style="margin-bottom: 20px;">
+    <label style="font-size: 0.85rem; color: var(--text-muted);">لۆگۆی فەرمی پڕۆژە</label>
+    <img id="drawerLogoPreview" src="" class="preview-logo-img" alt="لۆگۆ">
+    <input type="file" accept="image/*" onchange="previewSelectedLogo(event)">
+    <button onclick="uploadAppLogo()" class="btn-primary" style="margin-top: 6px; font-size: 0.85rem;">نوێکردنەوەی لۆگۆ ⬆️</button>
+  </div>
+
+  <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
+
+  <h4>گۆڕینی ناوی بەکارهێنەر و ڕەمز</h4>
+  <input type="text" id="currAdminUser" placeholder="یوزەری ئێستا" style="margin-bottom: 8px;">
+  <input type="password" id="currAdminPass" placeholder="ڕەمزی ئێستا" style="margin-bottom: 8px;">
+  <input type="text" id="newAdminUser" placeholder="یوزەری نوێ" style="margin-bottom: 8px;">
+  <input type="password" id="newAdminPass" placeholder="ڕەمزی نوێ" style="margin-bottom: 12px;">
+  <button onclick="updateAdminCredentials()" class="btn-primary" style="font-size: 0.85rem;">پاشەکەوتکردن 💾</button>
 </div>
 
 <script>
+  const OWNER_NUM = "000000";
+
   const firebaseConfig = {
     apiKey: "AIzaSyCv-XoBKJ4ZvvSuMMt3UqnJSUSHb6NTdzY",
     authDomain: "voice-system-c7785.firebaseapp.com",
@@ -93,62 +339,162 @@
     firebase.initializeApp(firebaseConfig);
   }
   const db = firebase.database();
+  const clientsRef = db.ref("users");
+  const settingsRef = db.ref("appSettings");
 
-  function createAccount() {
-    const name = document.getElementById("clientName").value.trim();
-    const phone = document.getElementById("clientPhone").value.trim();
-    const pass = document.getElementById("clientPass").value.trim();
-    const days = parseInt(document.getElementById("clientDays").value) || 30;
+  let auth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
+  let clients = [];
+  let tempLogoBase64 = null;
+  const $ = (id) => document.getElementById(id);
 
-    if (!name || phone.length !== 6 || !pass) {
-      alert("تکایە هەموو خانەکان پڕبکەرەوە و ژمارەی هێڵ دەبێت ٦ ڕەقەم بێت!");
-      return;
+  window.onload = () => {
+    checkAdminAuth();
+  };
+
+  function checkAdminAuth() {
+    if (sessionStorage.getItem("adminLogged") === "true") {
+      $("adminLoginScreen").style.display = "none";
+      initAdminApp();
+    } else {
+      $("adminLoginScreen").style.display = "flex";
     }
+  }
 
-    db.ref("users/" + phone).set({
-      name: name,
-      password: pass,
-      daysRemaining: days,
-      status: "active",
-      createdAt: Date.now()
-    }).then(() => {
-      alert("هێڵی " + phone + " بە سەرکەوتوویی زیادکرا!");
-      document.getElementById("clientName").value = "";
-      document.getElementById("clientPhone").value = "";
-      document.getElementById("clientPass").value = "";
+  function loginAdmin() {
+    const u = $("masterUserInput").value.trim().toLowerCase();
+    const p = $("masterPassInput").value.trim();
+
+    if ((u === "admin" && p === "admin1234") || (u === auth.user.toLowerCase() && p === auth.pass)) {
+      sessionStorage.setItem("adminLogged", "true");
+      $("adminLoginScreen").style.display = "none";
+      initAdminApp();
+    } else {
+      alert("تکایە دڵنیابە لە نووسینی: admin و admin1234");
+    }
+  }
+
+  function logoutAdmin() {
+    sessionStorage.removeItem("adminLogged");
+    location.reload();
+  }
+
+  function initAdminApp() {
+    listenToAppSettings();
+    listenToClients();
+  }
+
+  function toggleAdminDrawer(o) {
+    $("adminSettingsDrawer").classList.toggle("open", o);
+    $("adminDrawerOverlay").style.display = o ? "block" : "none";
+  }
+
+  function toggleAdminTheme() {
+    const isL = document.body.getAttribute("data-theme") === "light";
+    document.body.setAttribute("data-theme", isL ? "dark" : "light");
+  }
+
+  function previewSelectedLogo(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 128; canvas.height = 128;
+        ctx.drawImage(img, 0, 0, 128, 128);
+        tempLogoBase64 = canvas.toDataURL("image/png");
+        $("drawerLogoPreview").src = tempLogoBase64;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function uploadAppLogo() {
+    if (!tempLogoBase64) return alert("تکایە سەرەتا وێنەیەک هەڵبژێرە!");
+    settingsRef.update({ logoUrl: tempLogoBase64 }).then(() => {
+      alert("لۆگۆی KurdTell نوێکرایەوە ✅");
+      toggleAdminDrawer(false);
     }).catch(err => alert("هەڵە: " + err.message));
   }
 
-  db.ref("users").on("value", snapshot => {
-    const tbody = document.getElementById("linesTableBody");
-    tbody.innerHTML = "";
-    const data = snapshot.val();
-
-    if (!data) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">هیچ هێڵێک تۆمار نەکراوە</td></tr>';
-      return;
-    }
-
-    Object.keys(data).forEach(phone => {
-      const u = data[phone];
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><strong>${u.name || '--'}</strong></td>
-        <td>${phone}</td>
-        <td><code>${u.password || '--'}</code></td>
-        <td>${u.daysRemaining || 0} ڕۆژ</td>
-        <td><span class="status-badge">چالاکە</span></td>
-        <td><button onclick="deleteAccount('${phone}')" class="btn btn-red">سڕینەوە 🗑️</button></td>
-      `;
-      tbody.appendChild(tr);
+  function listenToAppSettings() {
+    settingsRef.child("logoUrl").on("value", (snap) => {
+      const url = snap.val();
+      if (url) {
+        $("adminHeaderLogo").src = url;
+        $("adminHeaderLogo").style.display = "inline-block";
+        $("drawerLogoPreview").src = url;
+      }
     });
-  });
-
-  function deleteAccount(phone) {
-    if (confirm("دڵنیایت لە سڕینەوەی هێڵی " + phone + "؟")) {
-      db.ref("users/" + phone).remove();
-    }
   }
-</script>
-</body>
-</html>
+
+  function updateAdminCredentials() {
+    const cu = $("currAdminUser").value.trim().toLowerCase(), cp = $("currAdminPass").value.trim();
+    const nu = $("newAdminUser").value.trim(), np = $("newAdminPass").value.trim();
+
+    if ((cu !== "admin" && cu !== auth.user.toLowerCase()) || (cp !== "admin1234" && cp !== auth.pass)) {
+      return alert("یوزەر یان ڕەمزی کۆن هەڵەیە!");
+    }
+    if (!nu || !np) return alert("تکایە هەردوو خانەی نوێ پڕبکەرەوە!");
+
+    auth = { user: nu, pass: np };
+    localStorage.setItem("adminAuthData", JSON.stringify(auth));
+    alert("زانیاری ئەدمین بە سەرکەوتوویی نوێکرایەوە ✅");
+    toggleAdminDrawer(false);
+  }
+
+  function genPhone() {
+    let n;
+    do {
+      n = String(Math.floor(100000 + Math.random() * 900000));
+    } while (n === OWNER_NUM || clients.some(c => c.phone === n));
+    return n;
+  }
+
+  function genPass() {
+    const s = "abcdefghjkmnpqrstuvwxyz23456789";
+    let p = "";
+    for (let i = 0; i < 6; i++) p += s[Math.floor(Math.random() * s.length)];
+    return p;
+  }
+
+  function registerNewClient() {
+    const fn = $("newFullName").value.trim(), age = $("newAge").value.trim(),
+          rp = $("newRealPhone").value.trim(), ad = $("newAddress").value.trim(),
+          d = +$("newClientPlan").value;
+
+    if (!fn || !age || !rp || !ad) return alert("تکایە هەموو خانەکان پڕبکەرەوە!");
+
+    const p = genPhone(), pass = genPass();
+    const exp = new Date(Date.now() + d * 86400000);
+
+    const newClientData = {
+      name: fn,
+      fullName: fn,
+      age: age,
+      realPhone: rp,
+      address: ad,
+      phone: p,
+      password: pass,
+      daysRemaining: d,
+      expireDate: exp.toISOString(),
+      status: "active",
+      createdAt: Date.now()
+    };
+
+    clientsRef.child(p).set(newClientData).then(() => {
+      alert(`کڕیار تۆمارکرا:\nژمارەی هێڵ: ${p}\nڕەمز: ${pass}`);
+      $("newFullName").value = ""; $("newAge").value = "";
+      $("newRealPhone").value = ""; $("newAddress").value = "";
+    }).catch(err => alert("هەڵە: " + err.message));
+  }
+
+  function listenToClients() {
+    clientsRef.on("value", snap => {
+      const data = snap.val();
+      clients = [];
+      if (data) {
+        Object.keys(d
