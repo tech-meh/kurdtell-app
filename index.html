@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KurdTell</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="client-style.css">
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="client-container">
+  <!-- لاپەڕەی چوونەژوورەوە -->
+  <div id="clientLoginScreen" class="client-overlay">
+    <div class="client-login-card">
+      <img id="loginLogoPreview" src="" alt="Logo" class="brand-logo" style="display: none;">
+      <h2 class="brand-title">KurdTell</h2>
+      <p class="brand-sub" data-i18n="loginSub">تکایە بە ژمارەی هێڵ و نهێنوشەکەت بچۆ ژوورەوە</p>
+
+      <div class="input-group">
+        <input type="tel" id="loginPhone" placeholder="ژمارەی هێڵ (٦ ڕەقەم)" maxlength="6">
+        <input type="password" id="loginPass" placeholder="وشەی نهێنی">
+      </div>
+
+      <button onclick="loginClient()" class="btn-dial" data-i18n="loginBtn">چوونەژوورەوە 🚀</button>
+      <div id="loginErrorMsg" class="error-text" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- پەڕەی سەرەکی ئەپ -->
+  <div id="clientMainApp" style="display: none;">
+    <header class="app-header">
+      <div class="user-info-area">
+        <img id="mainAppLogo" src="" alt="Logo" class="mini-app-logo" style="display: none;">
+        <div>
+          <h3 id="clientDisplayFullName" class="client-name">...</h3>
+          <span id="clientDisplayNumber" class="client-number">--</span>
+        </div>
+      </div>
+      <button class="btn-icon-btn" onclick="toggleClientDrawer(true)" title="ڕێکخستنەکان">⚙️</button>
+    </header>
+
+    <div class="sub-status-bar">
+      <span id="lineStatusBadge" class="status-pill active" data-i18n="statusActive">چالاکە</span>
+      <span><span data-i18n="remDays">ڕۆژی ماوە:</span> <strong id="remDaysText" class="text-highlight">--</strong></span>
+    </div>
+
+    <!-- گۆڕینی بەشەکان -->
+    <div class="tab-switcher">
+      <button id="tabDialerBtn" class="tab-btn active" onclick="switchClientTab('dialer')" data-i18n="tabDialer">ژمارە لێدان</button>
+      <button id="tabContactsBtn" class="tab-btn" onclick="switchClientTab('contacts')" data-i18n="tabContacts">ناوەکان 👥</button>
+    </div>
+
+    <!-- کیپادی پەیوەندی -->
+    <div id="dialerSection" class="dialpad-section">
+      <div class="dial-input-wrapper">
+        <input type="tel" id="dialInput" placeholder="" readonly>
+        <button class="btn-clear-one" onclick="deleteDialDigit()">⌫</button>
+      </div>
+
+      <div class="keypad-grid">
+        <button class="num-key" onclick="appendDialDigit('1')">1</button>
+        <button class="num-key" onclick="appendDialDigit('2')">2</button>
+        <button class="num-key" onclick="appendDialDigit('3')">3</button>
+        <button class="num-key" onclick="appendDialDigit('4')">4</button>
+        <button class="num-key" onclick="appendDialDigit('5')">5</button>
+        <button class="num-key" onclick="appendDialDigit('6')">6</button>
+        <button class="num-key" onclick="appendDialDigit('7')">7</button>
+        <button class="num-key" onclick="appendDialDigit('8')">8</button>
+        <button class="num-key" onclick="appendDialDigit('9')">9</button>
+        <button class="num-key clear-key" onclick="clearDialPad()">C</button>
+        <button class="num-key" onclick="appendDialDigit('0')">0</button>
+        <button class="num-key add-contact-key" onclick="promptSaveCurrentDial()" title="تۆمارکردنی ئەم ژمارەیە">💾</button>
+      </div>
+
+      <div class="dial-actions">
+        <button id="btnStartCall" class="btn-call-action btn-green" onclick="startOutgoingCall()" data-i18n="callBtn">پەیوەندی 📞</button>
+        <button id="btnEndCall" class="btn-call-action btn-red" onclick="hangUpCurrentCall()" style="display: none;" data-i18n="endCallBtn">داخستنەوە 📴</button>
+      </div>
+
+      <div id="callTimerBox" class="call-timer-display" style="display: none;">00:00</div>
+    </div>
+
+    <!-- ناوە تۆمارکراوەکان -->
+    <div id="contactsSection" class="contacts-section" style="display: none;">
+      <div class="add-contact-form">
+        <input type="text" id="newContactName" placeholder="ناوی کەسەکە...">
+        <input type="tel" id="newContactNumber" placeholder="ژمارەی هێڵ (٦ ڕەقەم)" maxlength="6">
+        <button class="btn-dial" onclick="addNewContact()" data-i18n="addContactBtn">زیادکردنی ناو ➕</button>
+      </div>
+      <div id="contactsList" class="contacts-list-view"></div>
+    </div>
+
+    <!-- زەنگی هاتوو -->
+    <div id="incomingCallModal" class="incoming-call-box" style="display: none;">
+      <p class="incoming-title" data-i18n="incomingCall">پەیوەندی نوێ لە لایەن:</p>
+      <h3 id="incomingCallerNum">000000</h3>
+      <div class="modal-actions">
+        <button class="btn-accept" onclick="acceptIncomingCall()" data-i18n="acceptBtn">وەڵامدانەوە 📞</button>
+        <button class="btn-reject" onclick="rejectIncomingCall()" data-i18n="rejectBtn">ڕەتکردنەوە 📴</button>
+      </div>
+    </div>
+
+    <audio id="clientRemoteAudio" autoplay playsinline></audio>
+  </div>
+
+  <!-- سایدبار -->
+  <div id="clientDrawerOverlay" class="drawer-overlay" onclick="toggleClientDrawer(false)"></div>
+  <aside id="clientSettingsDrawer" class="client-drawer">
+    <div class="drawer-header">
+      <h3 data-i18n="settingsTitle">ڕێکخستنەکان ⚙️</h3>
+      <button class="close-drawer-btn" onclick="toggleClientDrawer(false)">✕</button>
+    </div>
+    <div class="drawer-content">
+      <section class="drawer-section">
+        <label data-i18n="accountLabel">هەژماری بەکارهێنەر 👤</label>
+        <div class="info-card">
+          <p><strong data-i18n="userName">ناو:</strong> <span id="drawerClientName">--</span></p>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <label data-i18n="languageLabel">زمان / Language / اللغة 🌐</label>
+        <select id="langSelect" onchange="changeAppLanguage(this.value)" class="drawer-select">
+          <option value="ckb">کوردی (سۆرانی)</option>
+          <option value="ar">العربية</option>
+          <option value="en">English</option>
+        </select>
+      </section>
+
+      <section class="drawer-section">
+        <label data-i18n="supportLabel">پشتیوانی و یارمەتی 📞</label>
+        <button class="btn-drawer-action" onclick="callSupportTeam()" data-i18n="supportBtn">پەیوەندی کردن بە تیمی KurdTell</button>
+      </section>
+
+      <section class="drawer-section">
+        <label data-i18n="themeLabel">ڕووکاری بینین 💡</label>
+        <button class="btn-drawer-action" onclick="toggleClientTheme()" data-i18n="themeBtn">گۆڕینی دۆخ (تاریک / ڕووناک)</button>
+      </section>
+
+      <section class="drawer-section">
+        <label data-i18n="blockLabel">ژمارە بلۆککراوەکان 🚫</label>
+        <div class="block-input-row">
+          <input type="tel" id="blockInputNumber" placeholder="ژمارەی ٦ ڕەقەمی" maxlength="6">
+          <button class="btn-block-add" onclick="addNumberToBlocklist()">بلۆک ⛔</button>
+        </div>
+        <div id="blockedNumbersList" class="blocked-tags-container"></div>
+      </section>
+
+      <button class="btn-drawer-exit" onclick="logoutClient()" data-i18n="logoutBtn">چوونەدەرەوە لەم هێڵە 🚪</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(console.error);
+  }
+</script>
+<script src="client-app.js"></script>
+</body>
+</html>
