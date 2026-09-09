@@ -45,18 +45,18 @@
 
     .admin-app { max-width: 1050px; margin: 0 auto; }
 
-    /* پەنجەرەی چوونەژوورەوە */
     .admin-login-overlay {
-      position: fixed; inset: 0; background: rgba(9, 13, 22, 0.95);
+      position: fixed; inset: 0; background: rgba(9, 13, 22, 0.96);
       display: flex; align-items: center; justify-content: center; z-index: 999;
     }
     .login-box {
       background: var(--panel-bg); border: 1px solid var(--border);
       padding: 25px; border-radius: 12px; width: 90%; max-width: 380px; text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
-    .login-box h2 { color: var(--primary); margin-bottom: 8px; }
+    .login-box h2 { color: var(--primary); margin-bottom: 8px; font-size: 1.3rem; }
     .login-box p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; }
-    .login-box input { margin-bottom: 12px; }
+    .login-box input { margin-bottom: 12px; text-align: center; }
 
     .admin-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -71,7 +71,7 @@
     .admin-header small { color: var(--text-muted); }
     .btn-logout {
       background: transparent; border: 1px solid var(--danger); color: var(--danger);
-      padding: 6px 12px; border-radius: 8px; cursor: pointer;
+      padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;
     }
 
     .app-logo-badge {
@@ -82,8 +82,7 @@
       border: 1px dashed var(--border); margin: 6px auto; display: block; background: rgba(255,255,255,0.05);
     }
 
-    /* هێڵی خاوەن */
-    .owner-call-card { background: var(--panel-bg); border: 1px solid var(--primary); margin-bottom: 15px; }
+    .owner-call-card { background: var(--panel-bg); border: 1px solid var(--primary); margin-bottom: 15px; border-radius: 12px; padding: 15px; }
     .owner-call-header { display: flex; justify-content: space-between; align-items: center; }
     .owner-badge { font-weight: bold; color: var(--primary); font-size: 1rem; }
     .status-indicator { font-size: 0.78rem; margin-top: 3px; }
@@ -107,7 +106,6 @@
     .btn-sm-reject { background: var(--danger); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     .btn-danger-wide { width: 100%; background: var(--danger); color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-    /* ئامارەکان */
     .stats-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px;
     }
@@ -133,16 +131,17 @@
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 
     input, select {
-      width: 100%; padding: 9px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg-dark); color: var(--text-main); box-sizing: border-box;
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-dark); color: var(--text-main); box-sizing: border-box; font-size: 0.9rem;
     }
+    input:focus, select:focus { border-color: var(--primary); outline: none; }
 
     .btn-primary {
-      background: var(--primary); color: #fff; border: none; padding: 10px; border-radius: 8px;
-      font-weight: bold; cursor: pointer; width: 100%;
+      background: var(--primary); color: #fff; border: none; padding: 11px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; width: 100%; font-size: 0.95rem;
     }
+    .btn-primary:active { opacity: 0.85; }
 
-    /* خشتەی کڕیاران */
     .table-container { overflow-x: auto; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; text-align: right; }
     th { padding: 10px; font-size: 0.8rem; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--card-bg); }
@@ -151,11 +150,10 @@
     .badge-active { background: rgba(16, 185, 129, 0.2); color: var(--primary); }
     .badge-paused { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
     .badge-expired { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-    .btn-action { padding: 4px 8px; border-radius: 5px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; margin-left: 4px; }
+    .btn-action { padding: 5px 9px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; margin-left: 4px; }
     .btn-del { background: rgba(239,68,68,0.2); color: var(--danger); }
     .btn-toggle { background: rgba(245,158,11,0.2); color: var(--warning); }
 
-    /* دڕاوەری ڕێکخستن */
     .admin-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; z-index: 100; }
     .admin-drawer {
       position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
@@ -173,9 +171,9 @@
     <div class="login-box">
       <h2>چوونەژوورەوەی بەڕێوەبەر 🔐</h2>
       <p>ناوی بەکارهێنەر و وشەی نهێنی بنووسە</p>
-      <input type="text" id="masterUserInput" placeholder="ناوی بەکارهێنەر (admin)">
-      <input type="password" id="masterPassInput" placeholder="ڕەمزی ئەدمین (admin1234)">
-      <button onclick="loginAdmin()" class="btn-primary">چوونەژوورەوە</button>
+      <input type="text" id="masterUserInput" value="admin" placeholder="ناوی بەکارهێنەر">
+      <input type="password" id="masterPassInput" value="admin1234" placeholder="ڕەمزی ئەدمین">
+      <button type="button" onclick="loginAdmin()" class="btn-primary">چوونەژوورەوە</button>
     </div>
   </div>
 
@@ -277,7 +275,7 @@
   <div class="card">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
       <h3>لیستی کڕیارانی تۆمارکراو 📋</h3>
-      <input type="text" id="searchInput" oninput="filterClients()" placeholder="🔍 گەڕان بەپێی ناو یان ژمارەی هێڵ..." style="width: 220px;">
+      <input type="text" id="searchInput" oninput="filterClients()" placeholder="🔍 گەڕان بەپێی ناو یان ژمارە..." style="width: 200px;">
     </div>
     <div class="table-container">
       <table>
@@ -342,14 +340,13 @@
   const clientsRef = db.ref("users");
   const settingsRef = db.ref("appSettings");
 
-  let auth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
   let clients = [];
   let tempLogoBase64 = null;
   const $ = (id) => document.getElementById(id);
 
-  window.onload = () => {
+  window.addEventListener("DOMContentLoaded", () => {
     checkAdminAuth();
-  };
+  });
 
   function checkAdminAuth() {
     if (sessionStorage.getItem("adminLogged") === "true") {
@@ -361,15 +358,19 @@
   }
 
   function loginAdmin() {
-    const u = $("masterUserInput").value.trim().toLowerCase();
-    const p = $("masterPassInput").value.trim();
+    const rawU = $("masterUserInput").value || "";
+    const rawP = $("masterPassInput").value || "";
+    const u = rawU.trim().toLowerCase();
+    const p = rawP.trim();
 
-    if ((u === "admin" && p === "admin1234") || (u === auth.user.toLowerCase() && p === auth.pass)) {
+    const storedAuth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
+
+    if ((u === "admin" && p === "admin1234") || (u === storedAuth.user.toLowerCase() && p === storedAuth.pass)) {
       sessionStorage.setItem("adminLogged", "true");
       $("adminLoginScreen").style.display = "none";
       initAdminApp();
     } else {
-      alert("تکایە دڵنیابە لە نووسینی: admin و admin1234");
+      alert("تکایە دڵنیابە لە نووسینی ناوی بەکارهێنەر و وشەی نهێنی:\nناوی بەکارهێنەر: admin\nوشەی نهێنی: admin1234");
     }
   }
 
@@ -434,14 +435,14 @@
   function updateAdminCredentials() {
     const cu = $("currAdminUser").value.trim().toLowerCase(), cp = $("currAdminPass").value.trim();
     const nu = $("newAdminUser").value.trim(), np = $("newAdminPass").value.trim();
+    const storedAuth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
 
-    if ((cu !== "admin" && cu !== auth.user.toLowerCase()) || (cp !== "admin1234" && cp !== auth.pass)) {
+    if ((cu !== "admin" && cu !== storedAuth.user.toLowerCase()) || (cp !== "admin1234" && cp !== storedAuth.pass)) {
       return alert("یوزەر یان ڕەمزی کۆن هەڵەیە!");
     }
     if (!nu || !np) return alert("تکایە هەردوو خانەی نوێ پڕبکەرەوە!");
 
-    auth = { user: nu, pass: np };
-    localStorage.setItem("adminAuthData", JSON.stringify(auth));
+    localStorage.setItem("adminAuthData", JSON.stringify({ user: nu, pass: np }));
     alert("زانیاری ئەدمین بە سەرکەوتوویی نوێکرایەوە ✅");
     toggleAdminDrawer(false);
   }
@@ -482,19 +483,4 @@
       daysRemaining: d,
       expireDate: exp.toISOString(),
       status: "active",
-      createdAt: Date.now()
-    };
-
-    clientsRef.child(p).set(newClientData).then(() => {
-      alert(`کڕیار تۆمارکرا:\nژمارەی هێڵ: ${p}\nڕەمز: ${pass}`);
-      $("newFullName").value = ""; $("newAge").value = "";
-      $("newRealPhone").value = ""; $("newAddress").value = "";
-    }).catch(err => alert("هەڵە: " + err.message));
-  }
-
-  function listenToClients() {
-    clientsRef.on("value", snap => {
-      const data = snap.val();
-      clients = [];
-      if (data) {
-        Object.keys(d
+      createdAt: D
