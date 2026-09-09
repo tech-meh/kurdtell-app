@@ -1,0 +1,10 @@
+{
+  "name": "KurdTell",
+  "short_name": "KurdTell",
+  "description": "سیستەمی پەیوەندی دەنگی KurdTell",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080c16",
+  "theme_color": "#10b981"
+}
