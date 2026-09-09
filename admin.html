@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>کۆنترۆڵ پانێڵی بەڕێوەبەر - KurdTell</title>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     :root {
       --bg-dark: #090d16;
@@ -20,19 +20,6 @@
       --border: #263352;
     }
 
-    [data-theme="light"] {
-      --bg-dark: #f1f5f9;
-      --panel-bg: #ffffff;
-      --card-bg: #ffffff;
-      --primary: #059669;
-      --danger: #dc2626;
-      --warning: #d97706;
-      --gold: #ca8a04;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --border: #cbd5e1;
-    }
-
     body {
       font-family: system-ui, -apple-system, sans-serif;
       background: var(--bg-dark);
@@ -45,66 +32,13 @@
 
     .admin-app { max-width: 1050px; margin: 0 auto; }
 
-    .admin-login-overlay {
-      position: fixed; inset: 0; background: rgba(9, 13, 22, 0.96);
-      display: flex; align-items: center; justify-content: center; z-index: 999;
-    }
-    .login-box {
-      background: var(--panel-bg); border: 1px solid var(--border);
-      padding: 25px; border-radius: 12px; width: 90%; max-width: 380px; text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    .login-box h2 { color: var(--primary); margin-bottom: 8px; font-size: 1.3rem; }
-    .login-box p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px; }
-    .login-box input { margin-bottom: 12px; text-align: center; }
-
     .admin-header {
       display: flex; justify-content: space-between; align-items: center;
       padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
     }
     .header-right-side { display: flex; align-items: center; gap: 10px; }
-    .settings-trigger-btn {
-      background: var(--panel-bg); border: 1px solid var(--border); color: var(--text-main);
-      font-size: 1.2rem; padding: 6px 10px; border-radius: 10px; cursor: pointer;
-    }
     .admin-header h1 { margin: 0; font-size: 1.25rem; color: var(--primary); }
     .admin-header small { color: var(--text-muted); }
-    .btn-logout {
-      background: transparent; border: 1px solid var(--danger); color: var(--danger);
-      padding: 6px 12px; border-radius: 8px; cursor: pointer; font-weight: bold;
-    }
-
-    .app-logo-badge {
-      width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);
-    }
-    .preview-logo-img {
-      width: 64px; height: 64px; border-radius: 12px; object-fit: cover;
-      border: 1px dashed var(--border); margin: 6px auto; display: block; background: rgba(255,255,255,0.05);
-    }
-
-    .owner-call-card { background: var(--panel-bg); border: 1px solid var(--primary); margin-bottom: 15px; border-radius: 12px; padding: 15px; }
-    .owner-call-header { display: flex; justify-content: space-between; align-items: center; }
-    .owner-badge { font-weight: bold; color: var(--primary); font-size: 1rem; }
-    .status-indicator { font-size: 0.78rem; margin-top: 3px; }
-    .status-indicator.online { color: #10b981; }
-    .status-indicator.offline { color: #ef4444; }
-    .admin-timer { font-size: 1.2rem; font-weight: bold; color: var(--primary); }
-
-    .incoming-alert {
-      margin-top: 10px; padding: 12px; background: rgba(16, 185, 129, 0.15);
-      border: 1px solid var(--primary); border-radius: 8px; display: flex;
-      justify-content: space-between; align-items: center; animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    .call-action-btns { display: flex; gap: 8px; }
-    .btn-sm-accept { background: var(--primary); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .btn-sm-reject { background: var(--danger); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-    .btn-danger-wide { width: 100%; background: var(--danger); color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
     .stats-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 15px;
@@ -115,32 +49,23 @@
     .stat-title { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
     .stat-value { font-size: 1.4rem; font-weight: bold; }
     .active-card .stat-value { color: var(--primary); }
-    .paused-card .stat-value { color: var(--warning); }
     .expired-card .stat-value { color: var(--danger); }
 
     .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-    .card h3 { margin: 0 0 10px 0; font-size: 1rem; }
-
-    .packages-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; }
-    .pkg-btn {
-      background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main);
-      padding: 10px 4px; border-radius: 8px; font-weight: bold; cursor: pointer;
-    }
-    .pkg-btn-gold { border-color: var(--gold); color: var(--gold); }
+    .card h3 { margin: 0 0 10px 0; font-size: 1rem; color: var(--text-main); }
 
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px; }
 
     input, select {
       width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--bg-dark); color: var(--text-main); box-sizing: border-box; font-size: 0.9rem;
+      background: #060911; color: var(--text-main); box-sizing: border-box; font-size: 0.9rem;
     }
     input:focus, select:focus { border-color: var(--primary); outline: none; }
 
     .btn-primary {
-      background: var(--primary); color: #fff; border: none; padding: 11px; border-radius: 8px;
-      font-weight: bold; cursor: pointer; width: 100%; font-size: 0.95rem;
+      background: var(--primary); color: #042f2e; border: none; padding: 12px; border-radius: 8px;
+      font-weight: bold; cursor: pointer; width: 100%; font-size: 0.95rem; margin-top: 10px;
     }
-    .btn-primary:active { opacity: 0.85; }
 
     .table-container { overflow-x: auto; margin-top: 10px; }
     table { width: 100%; border-collapse: collapse; text-align: right; }
@@ -148,79 +73,29 @@
     td { padding: 10px; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
     .badge-active { background: rgba(16, 185, 129, 0.2); color: var(--primary); }
-    .badge-paused { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
     .badge-expired { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-    .btn-action { padding: 5px 9px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.75rem; font-weight: bold; margin-left: 4px; }
-    .btn-del { background: rgba(239,68,68,0.2); color: var(--danger); }
-    .btn-toggle { background: rgba(245,158,11,0.2); color: var(--warning); }
-
-    .admin-drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; z-index: 100; }
-    .admin-drawer {
-      position: fixed; top: 0; right: -320px; width: 300px; height: 100%;
-      background: var(--panel-bg); border-left: 1px solid var(--border);
-      padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 101; overflow-y: auto;
-    }
-    .admin-drawer.open { right: 0; }
+    .btn-del { background: rgba(239,68,68,0.2); color: var(--danger); border: 1px solid rgba(239,68,68,0.4); padding: 5px 9px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
+    .owner-box { background: rgba(16, 185, 129, 0.1); border: 1px solid var(--primary); padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
 
 <div class="admin-app">
-  <!-- پەنجەرەی چوونەژوورەوەی ئەدمین -->
-  <div id="adminLoginScreen" class="admin-login-overlay">
-    <div class="login-box">
-      <h2>چوونەژوورەوەی بەڕێوەبەر 🔐</h2>
-      <p>ناوی بەکارهێنەر و وشەی نهێنی بنووسە</p>
-      <input type="text" id="masterUserInput" value="admin" placeholder="ناوی بەکارهێنەر">
-      <input type="password" id="masterPassInput" value="admin1234" placeholder="ڕەمزی ئەدمین">
-      <button type="button" onclick="loginAdmin()" class="btn-primary">چوونەژوورەوە</button>
-    </div>
-  </div>
-
-  <!-- سەردێڕ و بەشی سەرەوە -->
   <header class="admin-header">
     <div class="header-right-side">
-      <button class="settings-trigger-btn" onclick="toggleAdminDrawer(true)">⚙️</button>
-      <img id="adminHeaderLogo" src="" alt="Logo" class="app-logo-badge" style="display: none;">
       <div>
         <h1>کۆنترۆڵ پانێڵی KurdTell ⚡</h1>
         <small>بەڕێوەبردنی هێڵەکان و پەیوەندییەکان</small>
       </div>
     </div>
-    <div style="display: flex; gap: 8px;">
-      <button onclick="toggleAdminTheme()" class="settings-trigger-btn">🌓</button>
-      <button onclick="logoutAdmin()" class="btn-logout">چوونەدەرەوە 🚪</button>
-    </div>
+    <a href="index.html" style="color: var(--primary); text-decoration: none; font-size: 0.85rem; border: 1px solid var(--primary); padding: 6px 12px; border-radius: 8px;">چوون بۆ ئەپ 📱</a>
   </header>
 
-  <!-- هێڵی خاوەن: 000000 -->
-  <div class="card owner-call-card">
-    <div class="owner-call-header">
-      <div>
-        <span class="owner-badge">📞 هێڵی خاوەنی سیستەم: 000000</span>
-        <div id="adminServerStatus" class="status-indicator online">سێرڤەری Firebase چالاکە 🟢</div>
-      </div>
-      <div id="adminCallTimer" class="admin-timer" style="display: none;">00:00</div>
-    </div>
-
-    <div id="incomingCallArea" class="incoming-alert" style="display: none;">
-      <div>
-        <span style="display:block; font-size: 0.8rem; color: var(--text-muted);">پەیوەندی نوێی هاتوو:</span>
-        <strong id="incomingCallerText" style="font-size: 1.1rem; color: #10b981;">...</strong>
-      </div>
-      <div class="call-action-btns">
-        <button onclick="acceptAdminCall()" class="btn-sm-accept">📞 وەڵامدانەوە</button>
-        <button onclick="rejectAdminCall()" class="btn-sm-reject">📴 ڕەتکردنەوە</button>
-      </div>
-    </div>
-
-    <div id="activeCallControls" style="display: none; margin-top: 10px;">
-      <button onclick="hangUpAdminCall()" class="btn-danger-wide">📴 داخستنەوەی پەیوەندی</button>
-    </div>
-    <audio id="adminRemoteAudio" autoplay playsinline></audio>
+  <div class="owner-box">
+    <span>📞 هێڵی خاوەنی سیستەم: 000000</span>
+    <span id="connStatus" style="font-size: 0.8rem; color: #10b981;">داتابەیس پەیوەستە 🟢</span>
   </div>
 
-  <!-- ئامارەکان -->
   <div class="stats-grid">
     <div class="stat-card">
       <span class="stat-title">کۆی کڕیاران</span>
@@ -230,29 +105,13 @@
       <span class="stat-title">هێڵە چالاکەکان</span>
       <span class="stat-value" id="statActive">0</span>
     </div>
-    <div class="stat-card paused-card">
-      <span class="stat-title">هێڵە وەستێنراوەکان</span>
-      <span class="stat-value" id="statPaused">0</span>
-    </div>
     <div class="stat-card expired-card">
       <span class="stat-title">بەسەرچووەکان</span>
       <span class="stat-value" id="statExpired">0</span>
     </div>
   </div>
 
-  <!-- نوێکردنەوەی خێرا بە پاکیجەکان -->
-  <div class="card">
-    <h3>پاکیجەکانی بەشداریکردن (نوێکردنەوەی خێرا) 📦</h3>
-    <div class="packages-grid">
-      <button class="pkg-btn" onclick="renewSelectedPackage(7)">٧ ڕۆژی ⏱️</button>
-      <button class="pkg-btn" onclick="renewSelectedPackage(15)">١٥ ڕۆژی ⏱️</button>
-      <button class="pkg-btn" onclick="renewSelectedPackage(30)">٣٠ ڕۆژی ⏱️</button>
-      <button class="pkg-btn" onclick="renewSelectedPackage(60)">٦٠ ڕۆژی ⏱️</button>
-      <button class="pkg-btn pkg-btn-gold" onclick="renewSelectedPackage(365)">١ ساڵ 👑</button>
-    </div>
-  </div>
-
-  <!-- تۆمارکردنی کڕیاری نوێ -->
+  <!-- زیادکردنی کڕیاری نوێ -->
   <div class="card">
     <h3>تۆمارکردنی کڕیاری نوێ و دروستکردنی هێڵ 📝</h3>
     <div class="form-grid">
@@ -268,7 +127,7 @@
         <option value="365">١ ساڵ</option>
       </select>
     </div>
-    <button onclick="registerNewClient()" class="btn-primary" style="margin-top: 10px;">تۆمارکردن لە بنکەی دراوە (Firebase) ✅</button>
+    <button type="button" onclick="registerNewClient()" class="btn-primary">تۆمارکردن لە داتابەیس ✅</button>
   </div>
 
   <!-- خشتەی کڕیاران -->
@@ -284,44 +143,20 @@
             <th>ناوی سیانی</th>
             <th>هێڵ (٦ ژمارە)</th>
             <th>وشەی نهێنی</th>
-            <th>بەسەرچوون</th>
+            <th>ڕۆژی بەشداریکردن</th>
             <th>دۆخ</th>
-            <th>کردارەکان</th>
+            <th>کردار</th>
           </tr>
         </thead>
         <tbody id="clientsTableBody">
-          <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">باردەکرێت...</td></tr>
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">چاوەڕێی داتاکانە...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
-<!-- دڕاوەری ڕێکخستنەکان -->
-<div id="adminDrawerOverlay" class="admin-drawer-overlay" onclick="toggleAdminDrawer(false)"></div>
-<div id="adminSettingsDrawer" class="admin-drawer">
-  <h3 style="color: var(--primary); margin-top: 0;">ڕێکخستنەکانی سیستەم ⚙️</h3>
-  
-  <div class="logo-setting-box" style="margin-bottom: 20px;">
-    <label style="font-size: 0.85rem; color: var(--text-muted);">لۆگۆی فەرمی پڕۆژە</label>
-    <img id="drawerLogoPreview" src="" class="preview-logo-img" alt="لۆگۆ">
-    <input type="file" accept="image/*" onchange="previewSelectedLogo(event)">
-    <button onclick="uploadAppLogo()" class="btn-primary" style="margin-top: 6px; font-size: 0.85rem;">نوێکردنەوەی لۆگۆ ⬆️</button>
-  </div>
-
-  <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0;">
-
-  <h4>گۆڕینی ناوی بەکارهێنەر و ڕەمز</h4>
-  <input type="text" id="currAdminUser" placeholder="یوزەری ئێستا" style="margin-bottom: 8px;">
-  <input type="password" id="currAdminPass" placeholder="ڕەمزی ئێستا" style="margin-bottom: 8px;">
-  <input type="text" id="newAdminUser" placeholder="یوزەری نوێ" style="margin-bottom: 8px;">
-  <input type="password" id="newAdminPass" placeholder="ڕەمزی نوێ" style="margin-bottom: 12px;">
-  <button onclick="updateAdminCredentials()" class="btn-primary" style="font-size: 0.85rem;">پاشەکەوتکردن 💾</button>
-</div>
-
 <script>
-  const OWNER_NUM = "000000";
-
   const firebaseConfig = {
     apiKey: "AIzaSyCv-XoBKJ4ZvvSuMMt3UqnJSUSHb6NTdzY",
     authDomain: "voice-system-c7785.firebaseapp.com",
@@ -329,130 +164,23 @@
     projectId: "voice-system-c7785",
     storageBucket: "voice-system-c7785.firebasestorage.app",
     messagingSenderId: "332965984577",
-    appId: "1:332965984577:web:059b4c23759695127749c0",
-    measurementId: "G-RQX7KLNF8J"
+    appId: "1:332965984577:web:059b4c23759695127749c0"
   };
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  } catch (err) {
+    console.error("Firebase init error: ", err);
   }
+
   const db = firebase.database();
   const clientsRef = db.ref("users");
-  const settingsRef = db.ref("appSettings");
-
-  let clients = [];
-  let tempLogoBase64 = null;
-  const $ = (id) => document.getElementById(id);
-
-  window.addEventListener("DOMContentLoaded", () => {
-    checkAdminAuth();
-  });
-
-  function checkAdminAuth() {
-    if (sessionStorage.getItem("adminLogged") === "true") {
-      $("adminLoginScreen").style.display = "none";
-      initAdminApp();
-    } else {
-      $("adminLoginScreen").style.display = "flex";
-    }
-  }
-
-  function loginAdmin() {
-    const rawU = $("masterUserInput").value || "";
-    const rawP = $("masterPassInput").value || "";
-    const u = rawU.trim().toLowerCase();
-    const p = rawP.trim();
-
-    const storedAuth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
-
-    if ((u === "admin" && p === "admin1234") || (u === storedAuth.user.toLowerCase() && p === storedAuth.pass)) {
-      sessionStorage.setItem("adminLogged", "true");
-      $("adminLoginScreen").style.display = "none";
-      initAdminApp();
-    } else {
-      alert("تکایە دڵنیابە لە نووسینی ناوی بەکارهێنەر و وشەی نهێنی:\nناوی بەکارهێنەر: admin\nوشەی نهێنی: admin1234");
-    }
-  }
-
-  function logoutAdmin() {
-    sessionStorage.removeItem("adminLogged");
-    location.reload();
-  }
-
-  function initAdminApp() {
-    listenToAppSettings();
-    listenToClients();
-  }
-
-  function toggleAdminDrawer(o) {
-    $("adminSettingsDrawer").classList.toggle("open", o);
-    $("adminDrawerOverlay").style.display = o ? "block" : "none";
-  }
-
-  function toggleAdminTheme() {
-    const isL = document.body.getAttribute("data-theme") === "light";
-    document.body.setAttribute("data-theme", isL ? "dark" : "light");
-  }
-
-  function previewSelectedLogo(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        canvas.width = 128; canvas.height = 128;
-        ctx.drawImage(img, 0, 0, 128, 128);
-        tempLogoBase64 = canvas.toDataURL("image/png");
-        $("drawerLogoPreview").src = tempLogoBase64;
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function uploadAppLogo() {
-    if (!tempLogoBase64) return alert("تکایە سەرەتا وێنەیەک هەڵبژێرە!");
-    settingsRef.update({ logoUrl: tempLogoBase64 }).then(() => {
-      alert("لۆگۆی KurdTell نوێکرایەوە ✅");
-      toggleAdminDrawer(false);
-    }).catch(err => alert("هەڵە: " + err.message));
-  }
-
-  function listenToAppSettings() {
-    settingsRef.child("logoUrl").on("value", (snap) => {
-      const url = snap.val();
-      if (url) {
-        $("adminHeaderLogo").src = url;
-        $("adminHeaderLogo").style.display = "inline-block";
-        $("drawerLogoPreview").src = url;
-      }
-    });
-  }
-
-  function updateAdminCredentials() {
-    const cu = $("currAdminUser").value.trim().toLowerCase(), cp = $("currAdminPass").value.trim();
-    const nu = $("newAdminUser").value.trim(), np = $("newAdminPass").value.trim();
-    const storedAuth = JSON.parse(localStorage.getItem("adminAuthData")) || { user: "admin", pass: "admin1234" };
-
-    if ((cu !== "admin" && cu !== storedAuth.user.toLowerCase()) || (cp !== "admin1234" && cp !== storedAuth.pass)) {
-      return alert("یوزەر یان ڕەمزی کۆن هەڵەیە!");
-    }
-    if (!nu || !np) return alert("تکایە هەردوو خانەی نوێ پڕبکەرەوە!");
-
-    localStorage.setItem("adminAuthData", JSON.stringify({ user: nu, pass: np }));
-    alert("زانیاری ئەدمین بە سەرکەوتوویی نوێکرایەوە ✅");
-    toggleAdminDrawer(false);
-  }
+  let clientsList = [];
 
   function genPhone() {
-    let n;
-    do {
-      n = String(Math.floor(100000 + Math.random() * 900000));
-    } while (n === OWNER_NUM || clients.some(c => c.phone === n));
-    return n;
+    return String(Math.floor(100000 + Math.random() * 900000));
   }
 
   function genPass() {
@@ -463,24 +191,109 @@
   }
 
   function registerNewClient() {
-    const fn = $("newFullName").value.trim(), age = $("newAge").value.trim(),
-          rp = $("newRealPhone").value.trim(), ad = $("newAddress").value.trim(),
-          d = +$("newClientPlan").value;
+    const fn = document.getElementById("newFullName").value.trim();
+    const age = document.getElementById("newAge").value.trim();
+    const rp = document.getElementById("newRealPhone").value.trim();
+    const ad = document.getElementById("newAddress").value.trim();
+    const days = parseInt(document.getElementById("newClientPlan").value) || 30;
 
-    if (!fn || !age || !rp || !ad) return alert("تکایە هەموو خانەکان پڕبکەرەوە!");
+    if (!fn) {
+      alert("تکایە ناوی کڕیار بنووسە!");
+      return;
+    }
 
-    const p = genPhone(), pass = genPass();
-    const exp = new Date(Date.now() + d * 86400000);
+    const p = genPhone();
+    const pass = genPass();
 
-    const newClientData = {
+    const newUserData = {
       name: fn,
       fullName: fn,
-      age: age,
-      realPhone: rp,
-      address: ad,
+      age: age || "--",
+      realPhone: rp || "--",
+      address: ad || "--",
       phone: p,
       password: pass,
-      daysRemaining: d,
-      expireDate: exp.toISOString(),
+      daysRemaining: days,
       status: "active",
-      createdAt: D
+      createdAt: Date.now()
+    };
+
+    clientsRef.child(p).set(newUserData).then(() => {
+      alert("کڕیار بە سەرکەوتوویی تۆمارکرا!\nژمارەی هێڵ: " + p + "\nوشەی نهێنی: " + pass);
+      document.getElementById("newFullName").value = "";
+      document.getElementById("newAge").value = "";
+      document.getElementById("newRealPhone").value = "";
+      document.getElementById("newAddress").value = "";
+    }).catch(err => {
+      alert("هەڵە لە فایربەیس: " + err.message);
+    });
+  }
+
+  clientsRef.on("value", snapshot => {
+    const data = snapshot.val();
+    clientsList = [];
+    if (data) {
+      Object.keys(data).forEach(k => {
+        clientsList.push({ phone: k, ...data[k] });
+      });
+    }
+    renderTable(clientsList);
+  }, error => {
+    document.getElementById("connStatus").innerText = "کێشەی داتابەیس: " + error.message;
+    document.getElementById("connStatus").style.color = "#ef4444";
+  });
+
+  function renderTable(list) {
+    const tbody = document.getElementById("clientsTableBody");
+    tbody.innerHTML = "";
+
+    let active = 0, expired = 0;
+
+    if (!list.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">هیچ هێڵێک تۆمار نەکراوە</td></tr>';
+      document.getElementById("statTotal").innerText = "0";
+      document.getElementById("statActive").innerText = "0";
+      document.getElementById("statExpired").innerText = "0";
+      return;
+    }
+
+    list.forEach(c => {
+      if (c.daysRemaining > 0) active++; else expired++;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${c.fullName || c.name || '--'}</strong><br><small style="color:var(--text-muted)">${c.realPhone || ''}</small></td>
+        <td><strong style="color:var(--primary); font-family:monospace; font-size:1.05rem;">${c.phone}</strong></td>
+        <td><code>${c.password || '--'}</code></td>
+        <td>${c.daysRemaining || 0} ڕۆژ</td>
+        <td><span class="badge badge-active">چالاکە</span></td>
+        <td>
+          <button onclick="deleteClient('${c.phone}')" class="btn-del">سڕینەوە 🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById("statTotal").innerText = list.length;
+    document.getElementById("statActive").innerText = active;
+    document.getElementById("statExpired").innerText = expired;
+  }
+
+  function filterClients() {
+    const q = document.getElementById("searchInput").value.trim().toLowerCase();
+    const filtered = clientsList.filter(c => 
+      (c.fullName && c.fullName.toLowerCase().includes(q)) || 
+      (c.name && c.name.toLowerCase().includes(q)) || 
+      c.phone.includes(q)
+    );
+    renderTable(filtered);
+  }
+
+  function deleteClient(p) {
+    if (confirm("دڵنیایت لە سڕینەوەی هێڵی " + p + "؟")) {
+      clientsRef.child(p).remove();
+    }
+  }
+</script>
+</body>
+</html>
