@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KurdTell - پانێڵی بەڕێوەبەر</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --primary: #10b981;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
+    body { background-color: var(--bg-dark); color: var(--text); padding: 15px; direction: rtl; }
+    .container { max-width: 900px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    h1 { font-size: 1.4rem; color: var(--primary); }
+    .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); }
+    .card h2 { font-size: 1.1rem; margin-bottom: 15px; }
+    .grid-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px; }
+    input { width: 100%; padding: 10px 14px; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: #fff; font-size: 0.95rem; }
+    input:focus { border-color: var(--primary); outline: none; }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    .btn-green { background: var(--primary); color: #000; }
+    .btn-green:hover { opacity: 0.9; }
+    .btn-red { background: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.85rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); }
+    th { color: var(--text-muted); font-size: 0.85rem; }
+    .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; background: rgba(16, 185, 129, 0.15); color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>KurdTell - پانێڵی بەڕێوەبەر ⚙️</h1>
+    <a href="index.html" class="btn btn-green" style="text-decoration: none; font-size: 0.85rem;">چوون بۆ ئەپ 📱</a>
+  </header>
+
+  <!-- فۆڕمی زیادکردنی هێڵی نوێ -->
+  <section class="card">
+    <h2>زیادکردنی هێڵی نوێ ➕</h2>
+    <div class="grid-inputs">
+      <input type="text" id="clientName" placeholder="ناوی تەواوی بەکارهێنەر">
+      <input type="tel" id="clientPhone" placeholder="ژمارەی هێڵ (٦ ڕەقەم)" maxlength="6">
+      <input type="text" id="clientPass" placeholder="وشەی نهێنی">
+      <input type="number" id="clientDays" placeholder="ڕۆژی بەشداریکردن (بۆ نموونە: 30)" value="30">
+    </div>
+    <button onclick="createAccount()" class="btn btn-green">تۆمارکردن لە سیستەم 💾</button>
+  </section>
+
+  <!-- لیستی هێڵەکان -->
+  <section class="card">
+    <h2>هێڵە چالاکەکان 📋</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>ناو</th>
+            <th>ژمارەی هێڵ</th>
+            <th>وشەی نهێنی</th>
+            <th>ڕۆژی ماوە</th>
+            <th>دۆخ</th>
+            <th>کردار</th>
+          </tr>
+        </thead>
+        <tbody id="linesTableBody">
+          <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">چاوەڕێی بارکردنی داتاکانە...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  // لێرەدا کۆنفیگی فایربەیسەکەت دابنێ کە لە client-app.js هەتە
+  const firebaseConfig = {
+    apiKey: "AIzaSy...",
+    authDomain: "kurdtell.firebaseapp.com",
+    databaseURL: "https://kurdtell-default-rtdb.firebaseio.com",
+    projectId: "kurdtell",
+    storageBucket: "kurdtell.appspot.com",
+    messagingSenderId: "...",
+    appId: "..."
+  };
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  const db = firebase.database();
+
+  // دروستکردنی هەژمار
+  function createAccount() {
+    const name = document.getElementById("clientName").value.trim();
+    const phone = document.getElementById("clientPhone").value.trim();
+    const pass = document.getElementById("clientPass").value.trim();
+    const days = parseInt(document.getElementById("clientDays").value) || 30;
+
+    if (!name || phone.length !== 6 || !pass) {
+      alert("تکایە هەموو خانەکان بە دروستی پڕبکەرەوە (ژمارەی هێڵ دەبێت ٦ ڕەقەم بێت)!");
+      return;
+    }
+
+    db.ref("users/" + phone).set({
+      name: name,
+      password: pass,
+      daysRemaining: days,
+      status: "active",
+      createdAt: Date.now()
+    }).then(() => {
+      alert("هێڵی " + phone + " بە سەرکەوتوویی زیادکرا!");
+      document.getElementById("clientName").value = "";
+      document.getElementById("clientPhone").value = "";
+      document.getElementById("clientPass").value = "";
+    }).catch(err => alert("هەڵە: " + err.message));
+  }
+
+  // پیشاندانی هێڵەکان لە خشتەکەدا
+  db.ref("users").on("value", snapshot => {
+    const tbody = document.getElementById("linesTableBody");
+    tbody.innerHTML = "";
+    const data = snapshot.val();
+
+    if (!data) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">هیچ هێڵێک تۆمار نەکراوە</td></tr>';
+      return;
+    }
+
+    Object.keys(data).forEach(phone => {
+      const u = data[phone];
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${u.name || '--'}</strong></td>
+        <td>${phone}</td>
+        <td><code>${u.password || '--'}</code></td>
+        <td>${u.daysRemaining || 0} ڕۆژ</td>
+        <td><span class="status-badge">چالاکە</span></td>
+        <td><button onclick="deleteAccount('${phone}')" class="btn btn-red">سڕینەوە 🗑️</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+
+  // سڕینەوەی هێڵ
+  function deleteAccount(phone) {
+    if (confirm("دڵنیایت لە سڕینەوەی هێڵی " + phone + "؟")) {
+      db.ref("users/" + phone).remove();
+    }
+  }
+</script>
+</body>
+</html>
