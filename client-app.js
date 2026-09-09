@@ -1,5 +1,4 @@
-const SERVER_URL = "wss://voice-server-production-4376.up.railway.app";
-const OWNER_NUM = "000000";
+// KurdTell Client Application Logic with Firebase Realtime Database & WebRTC
 
 const firebaseConfig = {
   apiKey: "AIzaSyCv-XoBKJ4ZvvSuMMt3UqnJSUSHb6NTdzY",
@@ -8,500 +7,375 @@ const firebaseConfig = {
   projectId: "voice-system-c7785",
   storageBucket: "voice-system-c7785.firebasestorage.app",
   messagingSenderId: "332965984577",
-  appId: "1:332965984577:web:c0853441191063407749c0"
+  appId: "1:332965984577:web:059b4c23759695127749c0",
+  measurementId: "G-RQX7KLNF8J"
 };
 
-firebase.initializeApp(firebaseConfig);
+// دەستپێکردنی فایربەیس
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 
-let currentClient = JSON.parse(localStorage.getItem("kurdtell_client_session")) || null;
-let savedContacts = JSON.parse(localStorage.getItem("kurdtell_contacts")) || [];
-let blockedList = JSON.parse(localStorage.getItem("kurdtell_blocked")) || [];
-let currentLang = localStorage.getItem("kurdtell_lang") || "ckb";
+// گۆڕاوە سەرەکییەکان
+let currentUser = null;
+let currentCall = null;
+let localStream = null;
+let peerConnection = null;
 
-let cSocket, cPeer, cStream, cTimer, cSec = 0;
-let pendingOffer = null, pendingCaller = null;
-const rtcCfg = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-const $ = (id) => document.getElementById(id);
-
-const translations = {
-  ckb: {
-    loginSub: "تکایە بە ژمارەی هێڵ و نهێنوشەکەت بچۆ ژوورەوە",
-    loginBtn: "چوونەژوورەوە 🚀",
-    statusActive: "چالاکە",
-    remDays: "ڕۆژی ماوە:",
-    tabDialer: "ژمارە لێدان",
-    tabContacts: "ناوەکان 👥",
-    callBtn: "پەیوەندی 📞",
-    endCallBtn: "داخستنەوە 📴",
-    addContactBtn: "زیادکردنی ناو ➕",
-    incomingCall: "پەیوەندی نوێ لە لایەن:",
-    acceptBtn: "وەڵامدانەوە 📞",
-    rejectBtn: "ڕەتکردنەوە 📴",
-    settingsTitle: "ڕێکخستنەکان ⚙️",
-    accountLabel: "هەژماری بەکارهێنەر 👤",
-    userName: "ناو:",
-    languageLabel: "زمان / Language / اللغة 🌐",
-    supportLabel: "پشتیوانی و یارمەتی 📞",
-    supportBtn: "پەیوەندی کردن بە تیمی KurdTell",
-    themeLabel: "ڕووکاری بینین 💡",
-    themeBtn: "گۆڕینی دۆخ (تاریک / ڕووناک)",
-    blockLabel: "ژمارە بلۆککراوەکان 🚫",
-    logoutBtn: "چوونەدەرەوە لەم هێڵە 🚪"
-  },
-  ar: {
-    loginSub: "يرجى تسجيل الدخول برقم الخط وكلمة المرور",
-    loginBtn: "تسجيل الدخول 🚀",
-    statusActive: "نشط",
-    remDays: "الأيام المتبقية:",
-    tabDialer: "لوحة الاتصال",
-    tabContacts: "جهات الاتصال 👥",
-    callBtn: "اتصال 📞",
-    endCallBtn: "إنهاء المكالمة 📴",
-    addContactBtn: "إضافة اسم ➕",
-    incomingCall: "مكالمة واردة من:",
-    acceptBtn: "رد 📞",
-    rejectBtn: "رفض 📴",
-    settingsTitle: "الإعدادات ⚙️",
-    accountLabel: "حساب المستخدم 👤",
-    userName: "الاسم:",
-    languageLabel: "اللغة / Language / زمان 🌐",
-    supportLabel: "الدعم والمساعدة 📞",
-    supportBtn: "الاتصال بفريق KurdTell",
-    themeLabel: "المظهر 💡",
-    themeBtn: "تغيير الوضع (داكن / فاتح)",
-    blockLabel: "الأرقام المحظورة 🚫",
-    logoutBtn: "تسجيل الخروج من هذا الخط 🚪"
-  },
-  en: {
-    loginSub: "Please log in with your line number and password",
-    loginBtn: "Log In 🚀",
-    statusActive: "Active",
-    remDays: "Remaining Days:",
-    tabDialer: "Keypad",
-    tabContacts: "Contacts 👥",
-    callBtn: "Call 📞",
-    endCallBtn: "End Call 📴",
-    addContactBtn: "Add Contact ➕",
-    incomingCall: "Incoming call from:",
-    acceptBtn: "Answer 📞",
-    rejectBtn: "Decline 📴",
-    settingsTitle: "Settings ⚙️",
-    accountLabel: "User Account 👤",
-    userName: "Name:",
-    languageLabel: "Language / زمان / اللغة 🌐",
-    supportLabel: "Support & Help 📞",
-    supportBtn: "Call KurdTell Team",
-    themeLabel: "Theme 💡",
-    themeBtn: "Toggle Theme (Dark / Light)",
-    blockLabel: "Blocked Numbers 🚫",
-    logoutBtn: "Sign Out 🚪"
-  }
+// سێرڤەرەکانی STUN بۆ پەیوەندی ڕاستەوخۆی دەنگ
+const rtcConfig = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" }
+  ]
 };
 
-function initApp() {
-  applyLanguage(currentLang);
-  $("langSelect").value = currentLang;
-  listenToLogo();
-  renderContacts();
-  renderBlocklist();
-
-  if (currentClient && currentClient.phone) {
-    verifyAndAutoLogin(currentClient.phone);
-  } else {
-    showLoginView();
+// پەیوەستکردنی دوگمەکانی پەڕەکە
+document.addEventListener("DOMContentLoaded", () => {
+  // پشکنینی ئەوەی ئایا پێشتر بەکارهێنەر چۆتە ژوورەوە یان نا
+  const savedUser = localStorage.getItem("kurdtell_user");
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showDialerScreen();
   }
-}
 
-function changeAppLanguage(lang) {
-  currentLang = lang;
-  localStorage.setItem("kurdtell_lang", lang);
-  applyLanguage(lang);
-}
+  // فۆڕمی چوونەژوورەوە
+  const loginForm = document.getElementById("loginForm");
+  if (loginForm) {
+    loginForm.addEventListener("submit", handleLogin);
+  }
 
-function applyLanguage(lang) {
-  document.documentElement.lang = lang;
-  document.documentElement.dir = (lang === "en") ? "ltr" : "rtl";
-  document.body.style.direction = (lang === "en") ? "ltr" : "rtl";
-
-  const t = translations[lang] || translations.ckb;
-  document.querySelectorAll("[data-i18n]").forEach(el => {
-    const key = el.getAttribute("data-i18n");
-    if (t[key]) el.innerText = t[key];
+  // دوگمەکانی کیپاد
+  document.querySelectorAll(".keypad-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const num = btn.getAttribute("data-key");
+      const display = document.getElementById("callInput");
+      if (display && num) {
+        display.value += num;
+      }
+    });
   });
-}
 
-function listenToLogo() {
-  db.ref("appSettings/logoUrl").on("value", (snap) => {
-    const url = snap.val();
-    if (url) {
-      $("loginLogoPreview").src = url;
-      $("loginLogoPreview").style.display = "inline-block";
-      $("mainAppLogo").src = url;
-      $("mainAppLogo").style.display = "inline-block";
-    }
-  });
-}
-
-function showLoginView() {
-  $("clientLoginScreen").style.display = "flex";
-  $("clientMainApp").style.display = "none";
-}
-
-function showMainApp() {
-  $("clientLoginScreen").style.display = "none";
-  $("clientMainApp").style.display = "block";
-  $("clientDisplayFullName").innerText = currentClient.fullName;
-  $("clientDisplayNumber").innerText = `${currentClient.phone}`;
-  $("drawerClientName").innerText = currentClient.fullName;
-  updateClientStatusUI();
-  connectWebSocket();
-}
-
-function updateClientStatusUI() {
-  const rem = Math.ceil((new Date(currentClient.expireDate) - Date.now()) / 86400000);
-  $("remDaysText").innerText = rem > 0 ? `${rem}` : "0";
-  const badge = $("lineStatusBadge");
-  if (currentClient.status === "active" && rem > 0) {
-    badge.innerText = translations[currentLang].statusActive;
-    badge.className = "status-pill active";
-  } else {
-    badge.innerText = "!";
-    badge.className = "status-pill paused";
-  }
-}
-
-function toggleClientDrawer(o) {
-  $("clientSettingsDrawer").classList.toggle("open", o);
-  $("clientDrawerOverlay").style.display = o ? "block" : "none";
-}
-
-function toggleClientTheme() {
-  const isLight = document.body.getAttribute("data-theme") === "light";
-  document.body.setAttribute("data-theme", isLight ? "dark" : "light");
-}
-
-function callSupportTeam() {
-  toggleClientDrawer(false);
-  switchClientTab('dialer');
-  $("dialInput").value = OWNER_NUM;
-  startOutgoingCall();
-}
-
-function switchClientTab(tab) {
-  if (tab === 'dialer') {
-    $("dialerSection").style.display = "block";
-    $("contactsSection").style.display = "none";
-    $("tabDialerBtn").classList.add("active");
-    $("tabContactsBtn").classList.remove("active");
-  } else {
-    $("dialerSection").style.display = "none";
-    $("contactsSection").style.display = "block";
-    $("tabDialerBtn").classList.remove("active");
-    $("tabContactsBtn").classList.add("active");
-  }
-}
-
-function addNewContact() {
-  const name = $("newContactName").value.trim();
-  const phone = $("newContactNumber").value.trim();
-
-  if (!name || phone.length !== 6) {
-    return alert("تکایە ناو بنووسە لەگەڵ ژمارەی ٦ ڕەقەمی!");
+  // دوگمەی سڕینەوە لە کیپاد
+  const backspaceBtn = document.getElementById("backspaceBtn");
+  if (backspaceBtn) {
+    backspaceBtn.addEventListener("click", () => {
+      const display = document.getElementById("callInput");
+      if (display) {
+        display.value = display.value.slice(0, -1);
+      }
+    });
   }
 
-  savedContacts.push({ name, phone });
-  localStorage.setItem("kurdtell_contacts", JSON.stringify(savedContacts));
-  $("newContactName").value = "";
-  $("newContactNumber").value = "";
-  renderContacts();
-}
-
-function promptSaveCurrentDial() {
-  const num = $("dialInput").value.trim();
-  if (num.length !== 6) return alert("سەرەتا ژمارەیەکی ٦ ڕەقەمی بنووسە!");
-  const name = prompt("ناوی کەسەکە بنووسە بۆ تۆمارکردن:");
-  if (name) {
-    savedContacts.push({ name: name.trim(), phone: num });
-    localStorage.setItem("kurdtell_contacts", JSON.stringify(savedContacts));
-    renderContacts();
-    alert("ناو بە سەرکەوتوویی تۆمارکرا ✅");
+  // دوگمەی دەرچوون
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", logoutUser);
   }
-}
 
-function deleteContact(index) {
-  savedContacts.splice(index, 1);
-  localStorage.setItem("kurdtell_contacts", JSON.stringify(savedContacts));
-  renderContacts();
-}
-
-function callFromContact(num) {
-  switchClientTab('dialer');
-  $("dialInput").value = num;
-  startOutgoingCall();
-}
-
-function renderContacts() {
-  const list = $("contactsList");
-  if (!list) return;
-  list.innerHTML = "";
-  if (savedContacts.length === 0) {
-    list.innerHTML = `<div style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:10px;">هیچ ناوێک تۆمار نەکراوە</div>`;
-    return;
+  // دوگمەی پەیوەندیکردن
+  const callBtn = document.getElementById("startCallBtn");
+  if (callBtn) {
+    callBtn.addEventListener("click", initiateCall);
   }
-  savedContacts.forEach((c, idx) => {
-    list.innerHTML += `
-      <div class="contact-item-row">
-        <div class="contact-details">
-          <h4>${c.name}</h4>
-          <span>${c.phone}</span>
-        </div>
-        <div class="contact-actions">
-          <button class="btn-quick-call" onclick="callFromContact('${c.phone}')">📞</button>
-          <button class="btn-del-contact" onclick="deleteContact(${idx})">🗑️</button>
-        </div>
-      </div>
-    `;
-  });
-}
 
-function addNumberToBlocklist() {
-  const num = $("blockInputNumber").value.trim();
-  if (num.length !== 6) return alert("ژمارەی هێڵ دەبێت ٦ ڕەقەم بێت!");
-  if (!blockedList.includes(num)) {
-    blockedList.push(num);
-    localStorage.setItem("kurdtell_blocked", JSON.stringify(blockedList));
-    $("blockInputNumber").value = "";
-    renderBlocklist();
+  // دوگمەی داخستنەوەی پەیوەندی
+  const endCallBtn = document.getElementById("endCallBtn");
+  if (endCallBtn) {
+    endCallBtn.addEventListener("click", hangUpCall);
   }
-}
 
-function removeBlockedNumber(num) {
-  blockedList = blockedList.filter(n => n !== num);
-  localStorage.setItem("kurdtell_blocked", JSON.stringify(blockedList));
-  renderBlocklist();
-}
+  // دوگمەی وەڵامدانەوەی پەیوەندی
+  const acceptCallBtn = document.getElementById("acceptCallBtn");
+  if (acceptCallBtn) {
+    acceptCallBtn.addEventListener("click", answerCall);
+  }
 
-function renderBlocklist() {
-  const box = $("blockedNumbersList");
-  if (!box) return;
-  box.innerHTML = "";
-  blockedList.forEach(num => {
-    box.innerHTML += `
-      <span class="blocked-tag">
-        ${num}
-        <button onclick="removeBlockedNumber('${num}')">✕</button>
-      </span>
-    `;
-  });
-}
+  // دوگمەی ڕەتکردنەوەی پەیوەندی
+  const rejectCallBtn = document.getElementById("rejectCallBtn");
+  if (rejectCallBtn) {
+    rejectCallBtn.addEventListener("click", hangUpCall);
+  }
+});
 
-function loginClient() {
-  const phone = $("loginPhone").value.trim();
-  const pass = $("loginPass").value.trim();
-  const errBox = $("loginErrorMsg");
+// چوونەژوورەوەی بەکارهێنەر
+function handleLogin(e) {
+  e.preventDefault();
+  const phoneInput = document.getElementById("loginPhone").value.trim();
+  const passInput = document.getElementById("loginPass").value.trim();
 
-  if (!phone || !pass) {
-    errBox.innerText = "تکایە هەردوو خانەکە پڕبکەرەوە!";
-    errBox.style.display = "block";
+  if (!phoneInput || !passInput) {
+    alert("تکایە هەردوو خانەکە پڕبکەرەوە");
     return;
   }
 
-  db.ref("clients/" + phone).once("value").then((snap) => {
-    const data = snap.val();
-    if (!data) {
-      errBox.innerText = "ئەم ژمارەی هێڵە بوونی نییە!";
-      errBox.style.display = "block";
-      return;
-    }
-    if (data.pass !== pass) {
-      errBox.innerText = "وشەی نهێنی هەڵەیە!";
-      errBox.style.display = "block";
-      return;
-    }
-    const rem = Math.ceil((new Date(data.expireDate) - Date.now()) / 86400000);
-    if (rem <= 0 || data.status !== "active") {
-      errBox.innerText = "ئەم هێڵە وەستێنراوە یان بەسەرچووە!";
-      errBox.style.display = "block";
-      return;
-    }
-    currentClient = data;
-    localStorage.setItem("kurdtell_client_session", JSON.stringify(data));
-    errBox.style.display = "none";
-    showMainApp();
-  }).catch((err) => {
-    errBox.innerText = "هەڵە: " + err.message;
-    errBox.style.display = "block";
-  });
-}
-
-function verifyAndAutoLogin(phone) {
-  db.ref("clients/" + phone).on("value", (snap) => {
-    const data = snap.val();
-    if (data) {
-      currentClient = data;
-      localStorage.setItem("kurdtell_client_session", JSON.stringify(data));
-      showMainApp();
+  // هێنانی زانیاری لە فایربەیس
+  db.ref("users/" + phoneInput).once("value").then(snapshot => {
+    const user = snapshot.val();
+    if (user && user.password === passInput) {
+      currentUser = {
+        phone: phoneInput,
+        name: user.name,
+        daysRemaining: user.daysRemaining
+      };
+      localStorage.setItem("kurdtell_user", JSON.stringify(currentUser));
+      showDialerScreen();
     } else {
-      logoutClient();
+      alert("ژمارەی هێڵ یان نهێنوشە هەڵەیە!");
     }
+  }).catch(err => {
+    alert("هەڵە لە سێرڤەر: " + err.message);
   });
 }
 
-function logoutClient() {
-  localStorage.removeItem("kurdtell_client_session");
-  currentClient = null;
-  if (cSocket) cSocket.close();
+// نیشاندانی شاشەی کیپاد و چالاککردنی گوێگرتن لە پەیوەندی
+function showDialerScreen() {
+  const loginSection = document.getElementById("loginSection");
+  const dialerSection = document.getElementById("dialerSection");
+  const userDisplay = document.getElementById("currentUserName");
+  const phoneDisplay = document.getElementById("currentUserPhone");
+
+  if (loginSection) loginSection.style.display = "none";
+  if (dialerSection) dialerSection.style.display = "block";
+
+  if (userDisplay) userDisplay.innerText = currentUser.name || "بەکارهێنەر";
+  if (phoneDisplay) phoneDisplay.innerText = currentUser.phone;
+
+  // داواکردنی مۆڵەتی مایکرۆفۆن لە پێشوەختدا
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    localStream = stream;
+  }).catch(err => {
+    console.warn("مۆڵەتی مایکرۆفۆن نەدراوە: ", err);
+  });
+
+  // چاودێریکردنی پەیوەندییە هاتوەکان (Incoming Calls)
+  listenForIncomingCalls();
+}
+
+// دەرچوون لە هەژمار
+function logoutUser() {
+  if (currentUser) {
+    db.ref("calls/" + currentUser.phone).off();
+  }
+  localStorage.removeItem("kurdtell_user");
+  currentUser = null;
   location.reload();
 }
 
-function appendDialDigit(d) {
-  const input = $("dialInput");
-  if (input.value.length < 6) input.value += d;
-}
-
-function deleteDialDigit() {
-  const input = $("dialInput");
-  input.value = input.value.slice(0, -1);
-}
-
-function clearDialPad() {
-  $("dialInput").value = "";
-}
-
-function connectWebSocket() {
-  cSocket = new WebSocket(SERVER_URL);
-
-  cSocket.onopen = () => {
-    cSocket.send(JSON.stringify({ type: "register", id: currentClient.phone }));
-  };
-
-  cSocket.onclose = () => {
-    setTimeout(connectWebSocket, 3000);
-  };
-
-  cSocket.onmessage = async (e) => {
-    const msg = JSON.parse(e.data);
-
-    if (msg.type === "offer") {
-      if (blockedList.includes(msg.from)) {
-        cSocket.send(JSON.stringify({ type: "hangup", to: msg.from }));
-        return;
-      }
-
-      pendingOffer = msg.offer;
-      pendingCaller = msg.from;
-      
-      const found = savedContacts.find(c => c.phone === msg.from);
-      let showName = (msg.from === OWNER_NUM) ? "تیمی KurdTell" : msg.from;
-      if (found) showName = `${found.name} (${msg.from})`;
-
-      $("incomingCallerNum").innerText = showName;
-      $("incomingCallModal").style.display = "block";
-    } else if (msg.type === "answer" && cPeer) {
-      await cPeer.setRemoteDescription(new RTCSessionDescription(msg.answer));
-    } else if (msg.type === "candidate" && cPeer) {
-      await cPeer.addIceCandidate(new RTCIceCandidate(msg.candidate));
-    } else if (msg.type === "hangup") {
-      resetCallUI();
+// چاودێریکردنی پەیوەندیی هاتووە لە فایربەیس
+function listenForIncomingCalls() {
+  db.ref("calls/" + currentUser.phone).on("value", snapshot => {
+    const callData = snapshot.val();
+    if (callData && callData.status === "ringing" && !currentCall) {
+      currentCall = callData;
+      currentCall.isCaller = false;
+      showIncomingCallUI(callData.callerName, callData.callerPhone);
+    } else if (callData && callData.status === "ended") {
+      closeCallSession();
     }
+  });
+}
+
+// نیشاندانی پەنجەرەی هاتنی تەلەفۆن (زەنگ)
+function showIncomingCallUI(name, phone) {
+  const incomingModal = document.getElementById("incomingCallModal");
+  const callerNameText = document.getElementById("incomingCallerName");
+  const callerPhoneText = document.getElementById("incomingCallerPhone");
+
+  if (callerNameText) callerNameText.innerText = name || "نەناسراو";
+  if (callerPhoneText) callerPhoneText.innerText = phone;
+  if (incomingModal) incomingModal.style.display = "flex";
+
+  playRingtone();
+}
+
+// دەستپێکردنی پەیوەندی (Caller)
+function initiateCall() {
+  const targetPhone = document.getElementById("callInput").value.trim();
+  if (!targetPhone || targetPhone === currentUser.phone) {
+    alert("تکایە ژمارەیەکی دروست بنووسە!");
+    return;
+  }
+
+  // پشکنینی هەبوونی ئەو ژمارەیە لە داتابەیس
+  db.ref("users/" + targetPhone).once("value").then(snapshot => {
+    const targetUser = snapshot.val();
+    if (!targetUser) {
+      alert("ئەم ژمارەیە لە سیستەمدا تۆمار نەکراوە!");
+      return;
+    }
+
+    startWebRTC(true, targetPhone);
+  });
+}
+
+// بەستنەوەی WebRTC بۆ پەیوەندی دەنگی
+async function startWebRTC(isCaller, targetPhone) {
+  peerConnection = new RTCPeerConnection(rtcConfig);
+
+  if (!localStream) {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      alert("مۆڵەتی مایکرۆفۆن پێویستە بۆ پەیوەندیکردن!");
+      return;
+    }
+  }
+
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // گوێگرتن بۆ وەرگرتنی دەنگی کەسی بەرامبەر
+  peerConnection.ontrack = event => {
+    let remoteAudio = document.getElementById("remoteAudio");
+    if (!remoteAudio) {
+      remoteAudio = document.createElement("audio");
+      remoteAudio.id = "remoteAudio";
+      remoteAudio.autoplay = true;
+      document.body.appendChild(remoteAudio);
+    }
+    remoteAudio.srcObject = event.streams[0];
   };
-}
 
-async function startOutgoingCall() {
-  const target = $("dialInput").value.trim();
-  if (!target) return alert("تکایە سەرەتا ژمارەیەک بنووسە!");
-  if (target === currentClient.phone) return alert("ناتوانیت پەیوەندی بە ژمارەی خۆتەوە بکەیت!");
+  const callChannelId = isCaller ? targetPhone : currentUser.phone;
 
-  const rem = Math.ceil((new Date(currentClient.expireDate) - Date.now()) / 86400000);
-  if (rem <= 0 || currentClient.status !== "active") {
-    return alert("هێڵەکەت ناچالاکە یان ماوەکەی تەواو بووە!");
-  }
+  if (isCaller) {
+    showInCallUI("پەیوەندی دەکرێت بە...", targetPhone);
 
-  if (!cStream) cStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        db.ref(`calls/${callChannelId}/callerCandidates`).push(event.candidate.toJSON());
+      }
+    };
 
-  cPeer = new RTCPeerConnection(rtcCfg);
-  cStream.getTracks().forEach(t => cPeer.addTrack(t, cStream));
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
 
-  cPeer.ontrack = (e) => $("clientRemoteAudio").srcObject = e.streams[0];
-  cPeer.onicecandidate = (e) => {
-    if (e.candidate) cSocket.send(JSON.stringify({ type: "candidate", candidate: e.candidate, to: target }));
-  };
+    const callPayload = {
+      callerPhone: currentUser.phone,
+      callerName: currentUser.name,
+      targetPhone: targetPhone,
+      status: "ringing",
+      offer: { type: offer.type, sdp: offer.sdp }
+    };
 
-  const offer = await cPeer.createOffer();
-  await cPeer.setLocalDescription(offer);
-  cSocket.send(JSON.stringify({ type: "offer", offer: offer, to: target, from: currentClient.phone }));
+    await db.ref(`calls/${callChannelId}`).set(callPayload);
 
-  setInCallUI(true);
-}
+    // گوێگرتن لە وەڵامی بەرامبەر (Answer)
+    db.ref(`calls/${callChannelId}`).on("value", async snapshot => {
+      const data = snapshot.val();
+      if (data && data.answer && !peerConnection.currentRemoteDescription) {
+        const answerDesc = new RTCSessionDescription(data.answer);
+        await peerConnection.setRemoteDescription(answerDesc);
+        showInCallUI("لە پەیوەندیدایە", targetPhone);
+      }
+    });
 
-async function acceptIncomingCall() {
-  if (!pendingOffer || !pendingCaller) return;
-  if (!cStream) cStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // گواستنەوەی کاندیدەکانی کەسی وەڵامدەرەوە
+    db.ref(`calls/${callChannelId}/calleeCandidates`).on("child_added", snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(data));
+      }
+    });
 
-  cPeer = new RTCPeerConnection(rtcCfg);
-  cStream.getTracks().forEach(t => cPeer.addTrack(t, cStream));
+  } else {
+    // بۆ وەڵامدەرەوە (Callee)
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        db.ref(`calls/${callChannelId}/calleeCandidates`).push(event.candidate.toJSON());
+      }
+    };
 
-  cPeer.ontrack = (e) => $("clientRemoteAudio").srcObject = e.streams[0];
-  cPeer.onicecandidate = (e) => {
-    if (e.candidate) cSocket.send(JSON.stringify({ type: "candidate", candidate: e.candidate, to: pendingCaller }));
-  };
+    const callSnap = await db.ref(`calls/${callChannelId}`).once("value");
+    const callData = callSnap.val();
 
-  await cPeer.setRemoteDescription(new RTCSessionDescription(pendingOffer));
-  const ans = await cPeer.createAnswer();
-  await cPeer.setLocalDescription(ans);
-  cSocket.send(JSON.stringify({ type: "answer", answer: ans, to: pendingCaller }));
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
 
-  $("incomingCallModal").style.display = "none";
-  setInCallUI(true);
-}
+    await db.ref(`calls/${callChannelId}`).update({
+      answer: { type: answer.type, sdp: answer.sdp },
+      status: "connected"
+    });
 
-function rejectIncomingCall() {
-  if (cSocket && pendingCaller) {
-    cSocket.send(JSON.stringify({ type: "hangup", to: pendingCaller }));
-  }
-  resetCallUI();
-}
+    // گواستنەوەی کاندیدەکانی کەسی پەیوەندیکەر
+    db.ref(`calls/${callChannelId}/callerCandidates`).on("child_added", snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        peerConnection.addIceCandidate(new RTCIceCandidate(data));
+      }
+    });
 
-function hangUpCurrentCall() {
-  const target = $("dialInput").value.trim() || pendingCaller;
-  if (cSocket && target) {
-    cSocket.send(JSON.stringify({ type: "hangup", to: target }));
-  }
-  resetCallUI();
-}
-
-function setInCallUI(inCall) {
-  $("btnStartCall").style.display = inCall ? "none" : "block";
-  $("btnEndCall").style.display = inCall ? "block" : "none";
-  if (inCall) startTimer();
-  else resetCallUI();
-}
-
-function startTimer() {
-  cSec = 0;
-  $("callTimerBox").style.display = "block";
-  $("callTimerBox").innerText = "00:00";
-  clearInterval(cTimer);
-  cTimer = setInterval(() => {
-    cSec++;
-    $("callTimerBox").innerText = `${String(Math.floor(cSec/60)).padStart(2,'0')}:${String(cSec%60).padStart(2,'0')}`;
-  }, 1000);
-}
-
-function resetCallUI() {
-  clearInterval(cTimer);
-  cSec = 0;
-  $("callTimerBox").style.display = "none";
-  $("incomingCallModal").style.display = "none";
-  $("btnStartCall").style.display = "block";
-  $("btnEndCall").style.display = "none";
-  pendingOffer = pendingCaller = null;
-  if (cPeer) {
-    cPeer.close();
-    cPeer = null;
+    showInCallUI("لە پەیوەندیدایە", callData.callerPhone);
   }
 }
 
-window.onload = initApp;
+// وەڵامدانەوەی تەلەفۆن
+function answerCall() {
+  stopRingtone();
+  const incomingModal = document.getElementById("incomingCallModal");
+  if (incomingModal) incomingModal.style.display = "none";
+
+  startWebRTC(false, currentUser.phone);
+}
+
+// داخستنەوەی تەلەفۆن
+function hangUpCall() {
+  stopRingtone();
+  const targetId = (currentCall && currentCall.targetPhone) ? currentCall.targetPhone : (currentUser ? currentUser.phone : null);
+  if (targetId) {
+    db.ref(`calls/${targetId}`).update({ status: "ended" });
+    setTimeout(() => {
+      db.ref(`calls/${targetId}`).remove();
+    }, 1000);
+  }
+  closeCallSession();
+}
+
+// پاککردنەوەی دۆخی تەلەفۆن
+function closeCallSession() {
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+  currentCall = null;
+  stopRingtone();
+
+  const activeCallModal = document.getElementById("activeCallModal");
+  const incomingModal = document.getElementById("incomingCallModal");
+  if (activeCallModal) activeCallModal.style.display = "none";
+  if (incomingModal) incomingModal.style.display = "none";
+}
+
+// پیشاندانی پەنجەرەی پەیوەندی کراوە
+function showInCallUI(statusText, phone) {
+  const activeCallModal = document.getElementById("activeCallModal");
+  const activeStatus = document.getElementById("activeCallStatus");
+  const activePhone = document.getElementById("activeCallTarget");
+
+  if (activeStatus) activeStatus.innerText = statusText;
+  if (activePhone) activePhone.innerText = phone;
+  if (activeCallModal) activeCallModal.style.display = "flex";
+}
+
+// لێدانی زەنگ (دەنگ)
+let ringtoneAudio = null;
+function playRingtone() {
+  try {
+    if (!ringtoneAudio) {
+      ringtoneAudio = new Audio("https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg");
+      ringtoneAudio.loop = true;
+    }
+    ringtoneAudio.play().catch(e => console.log("دەنگ دەستی پێ نەکرد: ", e));
+  } catch (e) {}
+}
+
+function stopRingtone() {
+  if (ringtoneAudio) {
+    ringtoneAudio.pause();
+    ringtoneAudio.currentTime = 0;
+  }
+}
