@@ -3,413 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>KurdTell - هێڵی پەیوەندی</title>
+  <title>KurdTell - پەیوەندی دەنگی</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
     :root {
       --bg: #090d16;
       --card: #131b2e;
       --card-inner: #1a233a;
       --primary: #10b981;
-      --primary-hover: #059669;
       --danger: #ef4444;
-      --warning: #f59e0b;
       --text: #f8fafc;
       --muted: #94a3b8;
       --border: #263352;
     }
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); padding: 14px; direction: rtl; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    
-    .app-container { width: 100%; max-width: 380px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
-    
-    h1 { color: var(--primary); font-size: 1.5rem; text-align: center; margin-bottom: 4px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 22px; width: 100%; max-width: 380px; box-shadow: 0 12px 36px rgba(0,0,0,0.5); }
+    h1 { color: var(--primary); font-size: 1.5rem; text-align: center; margin-bottom: 5px; }
     p.sub { text-align: center; color: var(--muted); font-size: 0.85rem; margin-bottom: 18px; }
+    input { width: 100%; padding: 13px; border-radius: 10px; border: 1px solid var(--border); background: #060911; color: #fff; margin-bottom: 12px; font-size: 1.1rem; text-align: center; outline: none; }
+    .btn { width: 100%; padding: 13px; border-radius: 10px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; }
+    .btn-green { background: var(--primary); color: #042f2e; }
+    .btn-red { background: var(--danger); color: #fff; }
     
-    input { width: 100%; padding: 13px; border-radius: 10px; border: 1px solid var(--border); background: #060911; color: #fff; margin-bottom: 12px; font-size: 1.05rem; text-align: center; outline: none; }
-    input:focus { border-color: var(--primary); }
-    
-    .btn { width: 100%; padding: 13px; border-radius: 10px; border: none; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
-    .btn-primary { background: var(--primary); color: #042f2e; }
-    .btn-primary:active { background: var(--primary-hover); }
-    .btn-danger { background: var(--danger); color: #fff; }
-    
-    #authAlert { display: none; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 12px; text-align: center; background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
-
     #clientApp { display: none; }
-    .user-header { background: var(--card-inner); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .user-info h3 { font-size: 1rem; color: var(--primary); margin-bottom: 2px; }
-    .user-info small { color: var(--muted); font-family: monospace; font-size: 0.9rem; }
-    .btn-logout { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; font-weight: bold; }
-    
-    .status-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 0.8rem; padding: 0 4px; }
-    .status-online { color: var(--primary); }
-    .status-offline { color: var(--danger); }
-    
-    .display-num { background: #060911; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; font-size: 1.5rem; font-weight: bold; letter-spacing: 3px; color: var(--text); min-height: 55px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; }
-    
+    .user-header { background: var(--card-inner); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .display-num { background: #060911; border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; font-size: 1.5rem; font-weight: bold; min-height: 55px; margin-bottom: 15px; }
     .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-    .key { background: var(--card-inner); border: 1px solid var(--border); color: #fff; padding: 15px 0; border-radius: 12px; font-size: 1.35rem; font-weight: bold; cursor: pointer; text-align: center; }
+    .key { background: var(--card-inner); border: 1px solid var(--border); color: #fff; padding: 15px 0; border-radius: 12px; font-size: 1.35rem; font-weight: bold; cursor: pointer; }
     .key:active { background: var(--primary); color: #000; }
-    .key.fn-key { color: var(--muted); font-size: 1.1rem; }
     
-    .call-overlay { display: none; position: fixed; inset: 0; background: rgba(9, 13, 22, 0.97); z-index: 99; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    .call-avatar { width: 90px; height: 90px; border-radius: 50%; background: var(--card-inner); border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin-bottom: 20px; }
-    .call-target { font-size: 1.5rem; font-weight: bold; margin-bottom: 8px; color: var(--primary); letter-spacing: 2px; }
-    .call-state { color: var(--muted); font-size: 0.95rem; margin-bottom: 25px; }
-    .call-timer { font-size: 1.4rem; font-family: monospace; font-weight: bold; margin-bottom: 35px; color: var(--text); }
+    .call-overlay { display: none; position: fixed; inset: 0; background: rgba(9, 13, 22, 0.98); z-index: 99; flex-direction: column; align-items: center; justify-content: center; }
+    .call-target { font-size: 1.6rem; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
-<div class="app-container">
-  <div class="card" id="authBox">
-    <h1>KurdTell ⚡</h1>
-    <p class="sub">تکایە ژمارەی هێڵ و وشەی نهێنی بنووسە</p>
+<div class="card" id="authBox">
+  <h1>KurdTell ⚡</h1>
+  <p class="sub">چوونەژوورەوەی هێڵ</p>
+  <input type="tel" id="inputPhone" placeholder="ژمارەی هێڵ">
+  <input type="password" id="inputPass" placeholder="وشەی نهێنی">
+  <button onclick="login()" class="btn btn-green" id="btnLog">چوونەژوورەوە 📲</button>
+  <p id="err" style="color:var(--danger); text-align:center; margin-top:10px; font-size:0.85rem;"></p>
+</div>
 
-    <div id="authAlert"></div>
-
-    <input type="tel" id="inputPhone" placeholder="ژمارەی هێڵ (٦ ژمارە)">
-    <input type="password" id="inputPass" placeholder="وشەی نهێنی">
-    <button type="button" id="btnLogin" onclick="handleAuth()" class="btn btn-primary">چوونەژوورەوە 📲</button>
-    
-    <div style="text-align: center; margin-top: 18px;">
-      <a href="admin.html" style="color: var(--muted); font-size: 0.8rem; text-decoration: none;">کۆنترۆڵ پانێڵی بەڕێوەبەر ⚙️</a>
+<div class="card" id="clientApp">
+  <div class="user-header">
+    <div>
+      <h3 id="uName" style="color:var(--primary);">--</h3>
+      <small id="uPhone" style="color:var(--muted);">--</small>
     </div>
+    <button onclick="logout()" style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:bold;">دەرچوون 🚪</button>
   </div>
-
-  <div class="card" id="clientApp">
-    <div class="user-header">
-      <div class="user-info">
-        <h3 id="clientName">--</h3>
-        <small id="clientPhone">هێڵ: ------</small>
-      </div>
-      <button onclick="handleLogout()" class="btn-logout">دەرچوون 🚪</button>
-    </div>
-
-    <div class="status-bar">
-      <span>دۆخی سێرڤەر: <strong id="srvStatus" class="status-offline">دەبەسترێت...</strong></span>
-      <span id="planDays" style="color: var(--warning);"></span>
-    </div>
-
-    <div class="display-num" id="dialDisplay"></div>
-
-    <div class="keypad">
-      <button class="key" onclick="pressKey('1')">1</button>
-      <button class="key" onclick="pressKey('2')">2</button>
-      <button class="key" onclick="pressKey('3')">3</button>
-      <button class="key" onclick="pressKey('4')">4</button>
-      <button class="key" onclick="pressKey('5')">5</button>
-      <button class="key" onclick="pressKey('6')">6</button>
-      <button class="key" onclick="pressKey('7')">7</button>
-      <button class="key" onclick="pressKey('8')">8</button>
-      <button class="key" onclick="pressKey('9')">9</button>
-      <button class="key fn-key" onclick="clearDial()">C</button>
-      <button class="key" onclick="pressKey('0')">0</button>
-      <button class="key fn-key" onclick="backspaceDial()">⌫</button>
-    </div>
-
-    <button onclick="startVoiceCall()" class="btn btn-primary">📞 پەیوەندیکردن</button>
+  <div class="display-num" id="dialDisplay"></div>
+  <div class="keypad">
+    <button class="key" onclick="press('1')">1</button>
+    <button class="key" onclick="press('2')">2</button>
+    <button class="key" onclick="press('3')">3</button>
+    <button class="key" onclick="press('4')">4</button>
+    <button class="key" onclick="press('5')">5</button>
+    <button class="key" onclick="press('6')">6</button>
+    <button class="key" onclick="press('7')">7</button>
+    <button class="key" onclick="press('8')">8</button>
+    <button class="key" onclick="press('9')">9</button>
+    <button class="key" onclick="clearD()" style="color:var(--danger);">C</button>
+    <button class="key" onclick="press('0')">0</button>
+    <button class="key" onclick="backD()">⌫</button>
   </div>
+  <button onclick="startCall()" class="btn btn-green">📞 پەیوەندیکردن</button>
 </div>
 
 <div class="call-overlay" id="callModal">
-  <div class="call-avatar">📞</div>
-  <div class="call-target" id="modalTarget">------</div>
-  <div class="call-state" id="modalState">پەیوەندی دەبەسترێت...</div>
-  <div class="call-timer" id="modalTimer" style="display: none;">00:00</div>
-  <button onclick="endVoiceCall()" class="btn btn-danger" style="max-width: 200px;">داخستنەوە 📴</button>
+  <div style="font-size: 4rem; margin-bottom: 15px;">📞</div>
+  <div class="call-target" id="targetView">------</div>
+  <div id="callState" style="color:var(--muted); margin-bottom: 25px;">پەیوەندی دەبەسترێت...</div>
+  <button onclick="hangupCall()" class="btn btn-red" style="max-width: 200px;">داخستنەوە 📴</button>
 </div>
 
-<audio id="remoteVoice" autoplay playsinline></audio>
+<audio id="remoteAudio" autoplay playsinline></audio>
 
 <script>
-  const DB_BASE = "https://voice-system-c7785-default-rtdb.firebaseio.com";
-  const VOICE_SERVER = "wss://voice-server-production-4376.up.railway.app";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCv-XoBKJ4ZvvSuMMt3UqnJSUSHb6NTdzY",
+    databaseURL: "https://voice-system-c7785-default-rtdb.firebaseio.com"
+  };
+  if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-  let currentUser = null;
-  let ws = null;
+  let myPhone = null;
   let peer = null;
   let localStream = null;
-  let callTimerInterval = null;
-  let callDuration = 0;
-  let currentTarget = null;
-
-  const rtcConfig = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" }
-    ]
-  };
+  let callRef = null;
 
   window.onload = function() {
-    const session = localStorage.getItem("kurdtell_active_client");
-    if (session) {
-      currentUser = JSON.parse(session);
-      launchClient();
+    const s = localStorage.getItem("kt_client");
+    if (s) {
+      const u = JSON.parse(s);
+      myPhone = u.phone;
+      openApp(u.name, u.phone);
     }
   };
 
-  async function handleAuth() {
-    const phone = document.getElementById("inputPhone").value.trim();
+  async function login() {
+    const p = document.getElementById("inputPhone").value.trim();
     const pass = document.getElementById("inputPass").value.trim();
-    const alertBox = document.getElementById("authAlert");
-    const btn = document.getElementById("btnLogin");
+    if (!p || !pass) return;
 
-    alertBox.style.display = "none";
-    if (!phone || !pass) {
-      alertBox.innerText = "تکایە ژمارەی هێڵ و وشەی نهێنی بنووسە!";
-      alertBox.style.display = "block";
-      return;
-    }
-
-    btn.innerText = "پشکنین...";
-    btn.disabled = true;
-
-    try {
-      let res = await fetch(`${DB_BASE}/users/${phone}.json`);
-      let data = await res.json();
-
-      if (!data) {
-        let resClients = await fetch(`${DB_BASE}/clients/${phone}.json`);
-        data = await resClients.json();
-      }
-
-      if (data) {
-        const remotePass = data.password || data.pass;
-        if (String(remotePass).trim() === String(pass).trim()) {
-          currentUser = {
-            phone: String(phone).trim(),
-            name: data.fullName || data.name || "کڕیار",
-            days: data.daysRemaining || "--"
-          };
-          localStorage.setItem("kurdtell_active_client", JSON.stringify(currentUser));
-          launchClient();
-        } else {
-          alertBox.innerText = "وشەی نهێنی هەڵەیە!";
-          alertBox.style.display = "block";
-        }
+    document.getElementById("btnLog").innerText = "چاوەڕێبە...";
+    
+    db.ref("users/" + p).once("value").then(snap => {
+      const u = snap.val();
+      if (u && (u.password === pass || u.pass === pass)) {
+        myPhone = p;
+        const name = u.fullName || u.name || "کڕیار";
+        localStorage.setItem("kt_client", JSON.stringify({ phone: p, name: name }));
+        openApp(name, p);
       } else {
-        alertBox.innerText = "ئەم هێڵە بوونی نییە لە سیستەم!";
-        alertBox.style.display = "block";
+        document.getElementById("err").innerText = "ژمارە یان ڕەمز هەڵەیە!";
       }
-    } catch (err) {
-      alertBox.innerText = "هەڵەی داتابەیس: " + err.message;
-      alertBox.style.display = "block";
-    } finally {
-      btn.innerText = "چوونەژوورەوە 📲";
-      btn.disabled = false;
-    }
+    }).finally(() => {
+      document.getElementById("btnLog").innerText = "چوونەژوورەوە 📲";
+    });
   }
 
-  function launchClient() {
+  function openApp(name, phone) {
     document.getElementById("authBox").style.display = "none";
     document.getElementById("clientApp").style.display = "block";
-    document.getElementById("clientName").innerText = currentUser.name;
-    document.getElementById("clientPhone").innerText = "هێڵ: " + currentUser.phone;
-    document.getElementById("planDays").innerText = currentUser.days + " ڕۆژ ماوە";
-
-    initVoiceSocket();
+    document.getElementById("uName").innerText = name;
+    document.getElementById("uPhone").innerText = "هێڵ: " + phone;
+    listenForCalls();
   }
 
-  function handleLogout() {
-    if (ws) ws.close();
-    localStorage.removeItem("kurdtell_active_client");
+  function logout() {
+    localStorage.removeItem("kt_client");
     location.reload();
   }
 
-  function initVoiceSocket() {
-    const srv = document.getElementById("srvStatus");
-    srv.innerText = "دەبەسترێت...";
-    srv.className = "status-offline";
+  function press(n) { document.getElementById("dialDisplay").innerText += n; }
+  function clearD() { document.getElementById("dialDisplay").innerText = ""; }
+  function backD() {
+    const d = document.getElementById("dialDisplay");
+    d.innerText = d.innerText.slice(0, -1);
+  }
 
-    try {
-      ws = new WebSocket(VOICE_SERVER);
+  // گوێگرتن لە پەیوەندی هاتووەکان ڕاستەوخۆ لە فایربەیس
+  function listenForCalls() {
+    db.ref("calls/" + myPhone).on("value", async snap => {
+      const data = snap.val();
+      if (!data) return;
 
-      ws.onopen = () => {
-        srv.innerText = "چالاکە 🟢";
-        srv.className = "status-online";
-        ws.send(JSON.stringify({ 
-          type: "register", 
-          phone: String(currentUser.phone).trim() 
-        }));
-      };
-
-      ws.onmessage = async (e) => {
-        const msg = JSON.parse(e.data);
-
-        if (msg.type === "call" || msg.type === "incoming") {
-          currentTarget = msg.from;
-          const accept = confirm(`📞 پەیوەندی هاتووە لە هێڵی [${msg.from}]\nوەڵام دەدەیتەوە؟`);
-          if (accept) {
-            handleIncomingCall(msg.from, msg.offer);
-          } else {
-            ws.send(JSON.stringify({ type: "reject", to: msg.from }));
-          }
-        } 
-        else if (msg.type === "answer") {
-          if (peer) {
-            await peer.setRemoteDescription(new RTCSessionDescription(msg.answer));
-            onCallConnected();
-          }
-        } 
-        else if (msg.type === "ice") {
-          if (peer && msg.candidate) {
-            try {
-              await peer.addIceCandidate(new RTCIceCandidate(msg.candidate));
-            } catch (err) {}
-          }
-        } 
-        else if (msg.type === "hangup" || msg.type === "reject") {
-          teardownCallUI();
-          alert("پەیوەندی کۆتایی پێهات یان بەرامبەر ڕەتیکردەوە.");
+      if (data.type === "offer" && !peer) {
+        const accept = confirm(`📞 پەیوەندی لە هێڵی [${data.from}] هاتووە!\nوەڵام دەدەیتەوە؟`);
+        if (accept) {
+          answerCall(data);
+        } else {
+          db.ref("calls/" + myPhone).remove();
         }
-      };
+      } else if (data.type === "answer" && peer) {
+        await peer.setRemoteDescription(new RTCSessionDescription(data.answer));
+        document.getElementById("callState").innerText = "قسەکردن چالاکە 🟢";
+      } else if (data.type === "hangup") {
+        closeCallUI();
+      }
+    });
 
-      ws.onclose = () => {
-        srv.innerText = "پچڕاوە 🔴";
-        srv.className = "status-offline";
-        setTimeout(initVoiceSocket, 3000);
-      };
-    } catch (err) {
-      srv.innerText = "کێشەی سێرڤەر";
-    }
+    // گوێگرتن لە ICE
+    db.ref("ice/" + myPhone).on("child_added", async snap => {
+      const cand = snap.val();
+      if (peer && cand) {
+        try { await peer.addIceCandidate(new RTCIceCandidate(cand)); } catch(e){}
+      }
+    });
   }
 
-  function pressKey(num) {
-    const disp = document.getElementById("dialDisplay");
-    if (disp.innerText.length < 6) disp.innerText += num;
-  }
-  function clearDial() { document.getElementById("dialDisplay").innerText = ""; }
-  function backspaceDial() {
-    const disp = document.getElementById("dialDisplay");
-    disp.innerText = disp.innerText.slice(0, -1);
-  }
-
-  async function startVoiceCall() {
+  async function startCall() {
     const target = document.getElementById("dialDisplay").innerText.trim();
-    if (!target) return alert("تکایە ژمارەی هێڵی بەرامبەر لێبدە!");
-    if (target === currentUser.phone) return alert("ناتوانیت پەیوەندی بە هێڵی خۆتەوە بکەیت!");
+    if (!target) return alert("ژمارەی هێڵ بنووسە!");
+    if (target === myPhone) return alert("ناتوانیت پەیوەندی بە خۆتەوە بکەیت!");
 
-    currentTarget = target;
-    openCallUI(target, "زەنگ لێدەدات...");
+    showCallUI(target, "زەنگ لێدەدات...");
 
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      peer = new RTCPeerConnection(rtcConfig);
+      peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
 
-      localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+      localStream.getTracks().forEach(t => peer.addTrack(t, localStream));
 
-      peer.ontrack = (evt) => {
-        const audio = document.getElementById("remoteVoice");
-        audio.srcObject = evt.streams[0];
-        audio.play().catch(e => console.log(e));
+      peer.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
       };
 
-      peer.onicecandidate = (evt) => {
-        if (evt.candidate && ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ 
-            type: "ice", 
-            to: target, 
-            candidate: evt.candidate 
-          }));
-        }
+      peer.onicecandidate = e => {
+        if (e.candidate) db.ref("ice/" + target).push(e.candidate.toJSON());
       };
 
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      ws.send(JSON.stringify({
-        type: "call",
-        from: String(currentUser.phone).trim(),
-        to: String(target).trim(),
-        offer: offer
-      }));
+      callRef = target;
+      db.ref("calls/" + target).set({
+        type: "offer",
+        from: myPhone,
+        offer: { type: offer.type, sdp: offer.sdp }
+      });
     } catch (err) {
-      alert("ڕێگەپێدانی مایکرۆفۆن پێویستە بۆ پەیوەندی: " + err.message);
-      teardownCallUI();
+      alert("ڕێگەپێدانی مایک پێویستە: " + err.message);
+      closeCallUI();
     }
   }
 
-  async function handleIncomingCall(from, offer) {
-    openCallUI(from, "پەیوەست دەبێت...");
+  async function answerCall(data) {
+    showCallUI(data.from, "دەبەسترێت...");
+    callRef = data.from;
 
     try {
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      peer = new RTCPeerConnection(rtcConfig);
+      peer = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
 
-      localStream.getTracks().forEach(track => peer.addTrack(track, localStream));
+      localStream.getTracks().forEach(t => peer.addTrack(t, localStream));
 
-      peer.ontrack = (evt) => {
-        const audio = document.getElementById("remoteVoice");
-        audio.srcObject = evt.streams[0];
-        audio.play().catch(e => console.log(e));
+      peer.ontrack = e => {
+        document.getElementById("remoteAudio").srcObject = e.streams[0];
       };
 
-      peer.onicecandidate = (evt) => {
-        if (evt.candidate && ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ 
-            type: "ice", 
-            to: from, 
-            candidate: evt.candidate 
-          }));
-        }
+      peer.onicecandidate = e => {
+        if (e.candidate) db.ref("ice/" + data.from).push(e.candidate.toJSON());
       };
 
-      await peer.setRemoteDescription(new RTCSessionDescription(offer));
+      await peer.setRemoteDescription(new RTCSessionDescription(data.offer));
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
 
-      ws.send(JSON.stringify({
+      db.ref("calls/" + data.from).set({
         type: "answer",
-        to: from,
-        answer: answer
-      }));
+        from: myPhone,
+        answer: { type: answer.type, sdp: answer.sdp }
+      });
 
-      onCallConnected();
+      document.getElementById("callState").innerText = "قسەکردن چالاکە 🟢";
     } catch (err) {
-      alert("کێشە لە قبوڵکردنی دەنگ: " + err.message);
-      teardownCallUI();
+      alert("هەڵە لە وەڵامدانەوە: " + err.message);
+      closeCallUI();
     }
   }
 
-  function openCallUI(target, state) {
-    document.getElementById("modalTarget").innerText = target;
-    document.getElementById("modalState").innerText = state;
-    document.getElementById("modalTimer").style.display = "none";
+  function hangupCall() {
+    if (callRef) {
+      db.ref("calls/" + callRef).set({ type: "hangup" });
+    }
+    db.ref("calls/" + myPhone).remove();
+    db.ref("ice/" + myPhone).remove();
+    closeCallUI();
+  }
+
+  function showCallUI(target, state) {
+    document.getElementById("targetView").innerText = target;
+    document.getElementById("callState").innerText = state;
     document.getElementById("callModal").style.display = "flex";
   }
 
-  function onCallConnected() {
-    document.getElementById("modalState").innerText = "قسەکردن چالاکە 🟢";
-    const timerElem = document.getElementById("modalTimer");
-    timerElem.style.display = "block";
-    callDuration = 0;
-
-    clearInterval(callTimerInterval);
-    callTimerInterval = setInterval(() => {
-      callDuration++;
-      const mins = String(Math.floor(callDuration / 60)).padStart(2, "0");
-      const secs = String(callDuration % 60).padStart(2, "0");
-      timerElem.innerText = `${mins}:${secs}`;
-    }, 1000);
-  }
-
-  function endVoiceCall() {
-    if (ws && currentTarget && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: "hangup", to: currentTarget }));
-    }
-    teardownCallUI();
-  }
-
-  function teardownCallUI() {
-    clearInterval(callTimerInterval);
+  function closeCallUI() {
     if (peer) { peer.close(); peer = null; }
-    if (localStream) {
-      localStream.getTracks().forEach(t => t.stop());
-      localStream = null;
-    }
-    currentTarget = null;
+    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
     document.getElementById("callModal").style.display = "none";
   }
 </script>
