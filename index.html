@@ -148,7 +148,6 @@
     d.innerText = d.innerText.slice(0, -1);
   }
 
-  // گوێگرتن لە پەیوەندی هاتووەکان ڕاستەوخۆ لە فایربەیس
   function listenForCalls() {
     db.ref("calls/" + myPhone).on("value", async snap => {
       const data = snap.val();
@@ -169,7 +168,6 @@
       }
     });
 
-    // گوێگرتن لە ICE
     db.ref("ice/" + myPhone).on("child_added", async snap => {
       const cand = snap.val();
       if (peer && cand) {
@@ -182,6 +180,9 @@
     const target = document.getElementById("dialDisplay").innerText.trim();
     if (!target) return alert("ژمارەی هێڵ بنووسە!");
     if (target === myPhone) return alert("ناتوانیت پەیوەندی بە خۆتەوە بکەیت!");
+
+    await db.ref("calls/" + target).remove();
+    await db.ref("ice/" + target).remove();
 
     showCallUI(target, "زەنگ لێدەدات...");
 
@@ -249,12 +250,15 @@
     }
   }
 
-  function hangupCall() {
+  async function hangupCall() {
     if (callRef) {
-      db.ref("calls/" + callRef).set({ type: "hangup" });
+      await db.ref("calls/" + callRef).set({ type: "hangup" });
     }
-    db.ref("calls/" + myPhone).remove();
-    db.ref("ice/" + myPhone).remove();
+    await db.ref("calls/" + myPhone).remove();
+    await db.ref("ice/" + myPhone).remove();
+    if (callRef) {
+      await db.ref("ice/" + callRef).remove();
+    }
     closeCallUI();
   }
 
@@ -265,8 +269,17 @@
   }
 
   function closeCallUI() {
-    if (peer) { peer.close(); peer = null; }
-    if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+    if (peer) {
+      peer.ontrack = null;
+      peer.onicecandidate = null;
+      peer.close();
+      peer = null;
+    }
+    if (localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
+    }
+    callRef = null;
     document.getElementById("callModal").style.display = "none";
   }
 </script>
